@@ -1,0 +1,55 @@
+name: Setup app dependencies
+description: Restore ui-src/node_modules and dev/node_modules (the app UI's and the dev stack's packages, MDK's from npm) from cache by exact key; on a miss, npm ci both.
+
+inputs:
+  save:
+    description: Save the cache on a miss. Only the setup job sets this.
+    required: false
+    default: "false"
+  node-version:
+    description: Node.js version (e.g. lts/*).
+    required: true
+
+outputs:
+  cache-hit:
+    description: Whether both were restored from cache
+    value: ${{ steps.cache.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    # The root node_modules belongs to the standard node-setup-cache /
+    # node-restore-cache; these are the two other packages the jobs need.
+    - name: Restore app dependencies cache
+      id: cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ui-src/node_modules
+          dev/node_modules
+        key: app-deps-${{ runner.os }}-${{ inputs.node-version }}-${{ hashFiles('ui-src/package.json', 'ui-src/package-lock.json', 'dev/package.json', 'dev/package-lock.json') }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install app dependencies
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        npm --prefix ui-src ci --no-audit --no-fund
+        npm --prefix dev ci --no-audit --no-fund
+
+    # Unlike node-setup-cache this also saves on pull_request: downstream jobs
+    # in the same PR run must hit it. The key changes with the lockfiles, so
+    # concurrent runs rarely race on the same key.
+    - name: Save app dependencies cache
+      if: ${{ inputs.save == 'true' && steps.cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ui-src/node_modules
+          dev/node_modules
+        key: ${{ steps.cache.outputs.cache-primary-key }}
