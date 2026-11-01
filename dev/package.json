@@ -11,5 +11,8 @@
     "reporting-tool-lite": "file:..",
     "whatsminer-mdk-worker": "github:whatsminer/whatsminer-mdk-worker#a47fa82020454f9bfa9963ccaaa319b7948e8aa2",
     "yaml": "2.9.1"
+  },
+  "overrides": {
+    "glob": "14.0.3"
   }
 }

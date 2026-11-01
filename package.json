@@ -37,6 +37,9 @@
   "devDependencies": {
     "@tetherto/mdk-cli": "0.13.0"
   },
+  "overrides": {
+    "glob": "14.0.3"
+  },
   "engines": {
     "node": ">=24"
   }
