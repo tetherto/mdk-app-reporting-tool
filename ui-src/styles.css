@@ -1,0 +1,568 @@
+/* Built to ui/style.css; the dashboard adds it to the page with the app. Layout
+ * only, in the dashboard's `app` layer, which ranks above the devkit's: the
+ * dashboard owns the chrome, fonts and theme, and colours come from the MDK
+ * design tokens. Desktop-first. */
+@layer app {
+  .reporting-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 64px;
+  }
+
+  .reporting-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+  }
+
+  .reporting-page__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  /* Under the title: labelled controls on the left, Reset on the right, and a rule below, as in the design. */
+  .reporting-page__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--mdk-color-white-12);
+  }
+
+  /* MDK's PeriodControl lays its groups into the toolbar, so a page's own
+   * fields (Miner Type, Bitcoin Unit) sit beside them and Reset stays last. */
+  .reporting-page__toolbar .mdk-period-control {
+    display: contents;
+  }
+
+  .reporting-page__toolbar .mdk-period-control__reset {
+    order: 2;
+    margin-left: auto;
+  }
+
+  /* The segmented toggles, with the design's muted unselected and disabled options. */
+  .reporting-page__toolbar
+    .mdk_currency_toggler__button:not(.mdk_currency_toggler__button--active) {
+    color: var(--mdk-color-text-muted);
+  }
+
+  .reporting-page__toolbar .mdk_currency_toggler__button:disabled {
+    color: var(--mdk-color-white-12);
+    background: transparent;
+  }
+
+  .reporting-field,
+  .reporting-page__toolbar .mdk-period-control__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .reporting-field__label,
+  .reporting-page__toolbar .mdk-period-control__label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mdk-color-text-muted);
+  }
+
+  .reporting-field__row,
+  .reporting-widget__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .reporting-period__granularity {
+    min-width: 112px;
+  }
+
+  .reporting-filter {
+    min-width: 160px;
+  }
+
+  .reporting-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .reporting-row {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .reporting-row > .reporting-widget {
+    flex: 1 1 auto;
+  }
+
+  .reporting-row > .reporting-row__narrow {
+    flex: 0 0 352px;
+  }
+
+  .reporting-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .reporting-tiles--1 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reporting-tiles--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reporting-tiles--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* MDK's SingleStatCard as the design's tile: a raised card, the caption on
+   * its own line under the name, a quiet tag, detail lines under the value. */
+  .reporting-tiles > .mdk-single-stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 16px 14px;
+    background: var(--mdk-color-surface-elevated);
+    border: 1px solid var(--mdk-color-white-12);
+  }
+
+  .reporting-tiles .mdk-single-stat-card__name {
+    font-size: 11px;
+    color: var(--mdk-color-text-muted);
+  }
+
+  .reporting-tiles .mdk-single-stat-card__caption {
+    display: block;
+    margin-left: 0;
+  }
+
+  .reporting-tiles .mdk-single-stat-card__value {
+    font-size: 18px;
+  }
+
+  /* The page's headline figure, in the accent colour. */
+  .reporting-tiles .reporting-tile--accent .mdk-single-stat-card__value {
+    color: var(--mdk-color-primary);
+  }
+
+  .reporting-tiles .mdk-single-stat-card__tag {
+    padding: 0;
+    font-size: 11px;
+    color: var(--mdk-color-text-muted);
+    background: none;
+  }
+
+  .reporting-tiles .mdk-single-stat-card__detail {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    color: var(--mdk-color-text-muted);
+  }
+
+  /* Cost Summary's bottom row: the split doughnut, the cost tiles stacked,
+   * and the all-in cost chart. */
+  .reporting-costs-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.7fr) minmax(0, 1.4fr);
+    gap: 12px;
+  }
+
+  .reporting-costs-row > .reporting-widget {
+    margin-top: 0;
+  }
+
+  .reporting-costs-row > .reporting-tiles {
+    grid-auto-rows: 1fr;
+  }
+
+  /* A plain card around a devkit chart that brings its own title. */
+  .reporting-card {
+    padding: 20px 24px;
+    background: var(--mdk-color-surface-elevated);
+  }
+
+  /* A narrow card beside a wider block, e.g. the Subsidy / Fees doughnut beside the tiles. */
+  .reporting-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .reporting-split > .reporting-widget {
+    margin-top: 0;
+  }
+
+  /* MDK's ChartContainer, drawn as the design's card: a raised panel with a
+   * plain white title. */
+  .reporting-widget {
+    min-width: 0;
+    margin-top: 16px;
+    padding: 20px 24px;
+    background: var(--mdk-color-surface-elevated);
+  }
+
+  .reporting-widget .mdk-chart-container__title {
+    color: var(--mdk-color-white);
+    font-size: 1.125rem;
+    font-weight: 400;
+  }
+
+  /* The expand control is a bare icon, as in the design. */
+  .reporting-widget__actions .mdk-button--variant-icon {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  /* A widget whose source isn't wired, as in the design: a muted plug, what
+   * is missing, and the link to wire it on its own line. */
+  .reporting-not-wired {
+    min-height: 240px;
+    justify-content: center;
+  }
+
+  .reporting-not-wired .mdk-empty-state__image {
+    color: var(--mdk-color-text-muted);
+  }
+
+  .reporting-not-wired .mdk-empty-state__description {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Where to wire it: in the accent colour, with an arrow (Cost Input) or an
+   * arrow out of a box (the README, in a new tab), as in the design. */
+  .reporting-not-wired__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--mdk-color-primary);
+    text-decoration: none;
+  }
+
+  .reporting-not-wired__link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* A tile without its source has no value: the message sits under the name. */
+  .reporting-tile--not-wired .mdk-single-stat-card__value {
+    display: none;
+  }
+
+  /* A tile's (or a notice's) not-wired message: a small plug beside the
+   * short message, the link under them. */
+  .reporting-not-wired-inline {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 0.75rem;
+  }
+
+  .reporting-not-wired-inline__text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--mdk-color-text-muted);
+  }
+
+  /* Miners: the snapshot panel, its tab buttons, and the miners per type. */
+  .reporting-panel {
+    border: 1px solid var(--mdk-color-white-12);
+    background: var(--mdk-color-surface-elevated);
+  }
+
+  .reporting-panel__tabs {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--mdk-color-white-12);
+  }
+
+  .reporting-pill--active {
+    color: var(--mdk-color-primary);
+    background: color-mix(in srgb, var(--mdk-color-primary) 20%, transparent);
+    border-color: color-mix(in srgb, var(--mdk-color-primary) 45%, transparent);
+  }
+
+  .reporting-types {
+    display: grid;
+    grid-template-areas:
+      "total chart"
+      "legend chart";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    gap: 24px 48px;
+    padding: 16px;
+  }
+
+  .reporting-types__total {
+    grid-area: total;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--mdk-color-surface);
+  }
+
+  .reporting-types__count {
+    font-size: 22px;
+    color: var(--mdk-color-primary);
+  }
+
+  /* The doughnut's legend and chart take their own grid cells. */
+  .reporting-types .mdk-doughnut-chart {
+    display: contents;
+  }
+
+  .reporting-types .mdk-doughnut-chart__legend {
+    grid-area: legend;
+    align-self: start;
+  }
+
+  .reporting-types .mdk-doughnut-chart__chart {
+    grid-area: chart;
+  }
+
+  .reporting-types > .mdk-empty-state {
+    grid-area: legend;
+  }
+
+  /* Hash Revenue: the tiles over the network hashrate, the hashprice beside both. */
+  .reporting-hash-grid {
+    display: grid;
+    grid-template-areas:
+      "tiles hashprice"
+      "hashrate hashprice";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    gap: 12px;
+  }
+
+  .reporting-hash-grid > .reporting-widget {
+    margin-top: 0;
+  }
+
+  .reporting-hash-grid__tiles {
+    grid-area: tiles;
+  }
+
+  .reporting-hash-grid__hashrate {
+    grid-area: hashrate;
+  }
+
+  .reporting-hash-grid__hashprice {
+    grid-area: hashprice;
+  }
+
+  /* A chart's headline figure, e.g. the period's average efficiency. */
+  .reporting-highlight {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .reporting-highlight__label {
+    font-size: 12px;
+    color: var(--mdk-color-text-muted);
+  }
+
+  .reporting-highlight__value {
+    font-size: 22px;
+    color: var(--mdk-color-primary);
+  }
+
+  .reporting-highlight__unit {
+    font-size: 16px;
+    color: var(--mdk-color-text-muted);
+  }
+
+  /* Under a page's tabs, the toolbar sits between the tab list and the content. */
+  .reporting-page [role="tablist"] + .reporting-page__toolbar {
+    margin: 16px 0;
+  }
+
+  .reporting-grid .reporting-widget,
+  .reporting-row .reporting-widget {
+    margin-top: 0;
+  }
+
+  .reporting-widget--expanded {
+    grid-column: 1 / -1;
+  }
+
+  .reporting-widget a,
+  .reporting-reports a,
+  .reporting-home__link {
+    color: var(--mdk-color-primary);
+  }
+
+  /* The snapshot banner: when the data was sampled, and Refresh. */
+  .reporting-snapshot {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--mdk-color-text-muted);
+    background: color-mix(in srgb, var(--mdk-color-primary) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mdk-color-primary) 25%, transparent);
+  }
+
+  .reporting-snapshot__dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--mdk-color-primary);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--mdk-color-primary) 20%, transparent);
+  }
+
+  .reporting-snapshot__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .reporting-snapshot__title {
+    font-size: 13px;
+    color: var(--mdk-color-primary);
+  }
+
+  .reporting-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .reporting-section__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 400;
+    color: var(--mdk-color-white);
+  }
+
+  .reporting-model {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .reporting-model__meta {
+    font-size: 11px;
+    white-space: nowrap;
+    color: var(--mdk-color-text-muted);
+  }
+
+  /* A count tinted in its status or power mode's colour (--chip). */
+  .reporting-chip {
+    display: inline-block;
+    min-width: 64px;
+    padding: 3px 8px;
+    font-size: 12px;
+    text-align: center;
+    color: var(--chip);
+    background: color-mix(in srgb, var(--chip) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--chip) 35%, transparent);
+  }
+
+  .reporting-snapshot__error {
+    color: rgb(var(--mdk-color-error));
+  }
+
+  .reporting-note {
+    margin: 8px 0 0;
+    font-size: 0.85rem;
+    color: var(--mdk-color-text-muted);
+  }
+
+  .reporting-info {
+    cursor: help;
+  }
+
+  .reporting-costs {
+    width: 100%;
+    border: 1px solid var(--mdk-color-white-12);
+    border-collapse: collapse;
+  }
+
+  .reporting-costs th,
+  .reporting-costs td {
+    padding: 8px 12px;
+    font-size: 13px;
+    text-align: left;
+    border-bottom: 1px solid var(--mdk-color-white-12);
+  }
+
+  .reporting-costs th {
+    padding-block: 12px;
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--mdk-color-text-muted);
+    background: var(--mdk-color-white-4);
+  }
+
+  .reporting-costs th:first-child,
+  .reporting-costs td:first-child {
+    width: 33%;
+  }
+
+  .reporting-costs__input {
+    max-width: 200px;
+  }
+
+  /* The devkit draws input text in its disabled tone; saved costs read as values. */
+  .reporting-costs__input .mdk-input {
+    color: var(--mdk-color-white);
+  }
+
+  .reporting-costs__footer .reporting-snapshot__error:first-child {
+    margin-right: auto;
+  }
+
+  .reporting-costs__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .reporting-reports {
+    margin: 0;
+    padding-left: 20px;
+    line-height: 1.8;
+  }
+
+  .reporting-home {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .reporting-home .reporting-tiles {
+    margin-top: 0;
+  }
+
+  .reporting-home__link {
+    font-size: 0.85rem;
+  }
+}

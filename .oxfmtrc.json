@@ -1,0 +1,16 @@
+{
+  "$schema": "./ui-src/node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    "node_modules",
+    "dev/.mdk-satec",
+    ".trash",
+    "dev/apps",
+    "dev/.mdk",
+    "dev/mdk.yaml",
+    "ui",
+    "coverage",
+    "**/package-lock.json",
+    "plugin/mdk-plugin.json"
+  ],
+  "sortPackageJson": {}
+}

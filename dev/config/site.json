@@ -1,0 +1,31 @@
+{
+  "site": {
+    "name": "Demo Site",
+    "timezone": "UTC"
+  },
+  "miningUnits": [
+    { "id": "mu-1", "name": "Mining Unit 1", "workers": ["mu-1"], "model": "bitmain-antminer-s23" },
+    { "id": "mu-2", "name": "Mining Unit 2", "workers": ["mu-2"], "model": "bitmain-antminer-s23" },
+    {
+      "id": "mu-3",
+      "name": "Mining Unit 3",
+      "workers": ["mu-3"],
+      "model": "microbt-whatsminer-m70s"
+    },
+    {
+      "id": "mu-4",
+      "name": "Mining Unit 4",
+      "workers": ["mu-4"],
+      "model": "microbt-whatsminer-m70s"
+    }
+  ],
+  "meters": [
+    { "device": "pm-01", "label": "PM-01" },
+    { "device": "pm-02", "label": "PM-02" },
+    { "device": "pm-03", "label": "PM-03" },
+    { "device": "pm-04", "label": "PM-04" },
+    { "device": "pm-site", "label": "Site meter", "siteMeter": true }
+  ],
+  "pool": { "device": "ocean" },
+  "market": { "device": "mempool" }
+}

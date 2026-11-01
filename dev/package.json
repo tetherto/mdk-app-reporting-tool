@@ -1,0 +1,15 @@
+{
+  "name": "reporting-tool-lite-dev",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local dev stack for Reporting Tool Lite: the mock site's public MDK workers and the app itself.",
+  "dependencies": {
+    "@tetherto/mdk-core": "0.13.0",
+    "antminer-mdk-worker": "github:bitmain-official/antminer-mdk-worker#4fd776b4a048a1bc8284ec2eceed82b4631f960c",
+    "fastify": "5.12.7",
+    "ocean-mdk-worker": "github:OCEAN-xyz/mdk-wrk-minerpool-ocean#0e7e2def62bc923c6252dc946d4f602aae8bc0b0",
+    "reporting-tool-lite": "file:..",
+    "whatsminer-mdk-worker": "github:whatsminer/whatsminer-mdk-worker#a47fa82020454f9bfa9963ccaaa319b7948e8aa2",
+    "yaml": "2.9.1"
+  }
+}
