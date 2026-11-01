@@ -1,0 +1,56 @@
+{
+  "contractVersion": "1",
+  "metadata": {
+    "provider": "mempool.space",
+    "deviceFamily": "market-data",
+    "brand": "mempool.space",
+    "modelsSupported": ["mempool-space-api"],
+    "overview": "Bitcoin market data from the public mempool.space API: BTC price, its history, network hashrate, network hashprice, the fee share of block rewards and the fee rate. One device per API endpoint; no credentials."
+  },
+  "capabilities": {
+    "telemetry": [
+      {
+        "name": "price",
+        "type": "object",
+        "handler": "src/telemetry/price.js",
+        "description": "Current BTC price: { ts, usd }. An object, since the contract unit vocabulary has no currency."
+      },
+      {
+        "name": "price_history",
+        "type": "array",
+        "handler": "src/telemetry/price-history.js",
+        "description": "BTC price in USD with a time in [start, end] (ms): [{ ts, usd }]. Hourly for recent months, coarser before."
+      },
+      {
+        "name": "network_hashrate",
+        "type": "array",
+        "handler": "src/telemetry/network-hashrate.js",
+        "description": "Daily average network hashrate with a time in [start, end] (ms): [{ ts, hashrateHs }], in H/s. Up to three years back."
+      },
+      {
+        "name": "hashprice",
+        "type": "array",
+        "handler": "src/telemetry/hashprice.js",
+        "description": "Daily network hashprice with a time in [start, end] (ms): [{ ts, btcPerPhsDay, usdPerPhsDay }]: one day's block rewards (subsidy and fees) per PH/s of network hashrate. Up to two years back."
+      },
+      {
+        "name": "fee_share",
+        "type": "array",
+        "handler": "src/telemetry/fee-share.js",
+        "description": "Daily share of block rewards paid as transaction fees, with a time in [start, end] (ms): [{ ts, feeShare }], feeShare in [0, 1]. Splits a pool payout into subsidy and fees when the pool doesn't. Up to two years back."
+      },
+      {
+        "name": "fee_rate",
+        "type": "array",
+        "handler": "src/telemetry/fee-rate.js",
+        "description": "Daily typical transaction fee rate with a time in [start, end] (ms): [{ ts, feeRateSatsVb }], in sats/vB: the mean of the day's median block fee rates. Up to two years back."
+      }
+    ],
+    "commands": [],
+    "health": { "supportedStates": ["OK"] },
+    "errors": {
+      "ERR_MEMPOOL_UNREACHABLE": "The mempool.space API did not answer.",
+      "ERR_MEMPOOL_BAD_RESPONSE": "The mempool.space API answered with an unexpected body."
+    }
+  }
+}

@@ -549,7 +549,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      # The mdk CLI: dev:generate writes spec.rbac with it, and validate runs it.
+      # The mdk CLI, which validate runs.
       - name: Restore dependencies
         uses: ./.github/actions/node-restore-cache
         with:

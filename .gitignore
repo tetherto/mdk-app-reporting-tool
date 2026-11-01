@@ -1,0 +1,24 @@
+node_modules/
+# Local dev stack state (keys, worker stores, the app's store) and the dashboard
+# `mdk create dashboard --dir dev` scaffolds into it
+dev/.mdk/
+dev/apps/
+dev/.env
+# MDK's SATEC meter worker, fetched from the MDK release by scripts/setup.mjs
+dev/.mdk-satec/
+# TEMPORARY: the MDK checkout (develop) the UI side builds from, linked or
+# cloned by scripts/setup.mjs until an npm release ships its UI changes
+# Superseded files kept for review instead of being deleted; safe to remove
+/.trash/
+*.tsbuildinfo
+*.log
+.env
+.env.local
+coverage/
+.DS_Store
+.idea/
+.vscode/
+CLAUDE.md
+# MDK Agent Skills, installed per machine by `npm run mdk -- skill add --dir .`
+.claude/skills/
+.cursor/skills/

@@ -1,0 +1,46 @@
+{
+  "name": "@tetherto/mdk-app-reporting-tool",
+  "version": "0.13.0",
+  "description": "Reporting Tool: operations and financial reports for one mining site, as an MDK app (Gateway plugin + dashboard UI).",
+  "keywords": [
+    "mdk",
+    "mdk-app"
+  ],
+  "license": "Apache-2.0",
+  "files": [
+    "mdk-app.yaml",
+    "plugin/",
+    "ui/",
+    "README.md"
+  ],
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "mdk": "mdk",
+    "start": "node scripts/start.mjs",
+    "build:ui": "npm --prefix ui-src run build",
+    "dev:ui": "npm --prefix ui-src run dev",
+    "dev:stack": "node scripts/dev-stack.mjs",
+    "dev:dashboard": "npm run mdk -- run dashboard --dir dev",
+    "dev:user": "mdk user add --dir dev",
+    "dev:generate": "node dev/mock-site/generate.mjs",
+    "validate": "npm run mdk -- validate app reporting --dir dev",
+    "typecheck": "npm --prefix ui-src run typecheck",
+    "lint": "OXLINT_TSGOLINT_PATH=ui-src/node_modules/.bin/tsgolint ui-src/node_modules/.bin/oxlint --type-aware --report-unused-disable-directives -c .oxlintrc.json .",
+    "lint:fix": "OXLINT_TSGOLINT_PATH=ui-src/node_modules/.bin/tsgolint ui-src/node_modules/.bin/oxlint --type-aware --fix -c .oxlintrc.json .",
+    "fmt": "ui-src/node_modules/.bin/oxfmt -c .oxfmtrc.json .",
+    "fmt:check": "ui-src/node_modules/.bin/oxfmt -c .oxfmtrc.json --check .",
+    "test": "npm --prefix ui-src run test",
+    "test:coverage": "npm --prefix ui-src run test:coverage",
+    "gen:routes": "npm --prefix ui-src run gen:routes",
+    "check": "npm run fmt:check && npm run lint && npm run typecheck && npm run test && npm --prefix ui-src run gen:routes:check && npm run build:ui && npm run validate"
+  },
+  "devDependencies": {
+    "@tetherto/mdk-cli": "0.13.0"
+  },
+  "overrides": {
+    "glob": "14.0.3"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

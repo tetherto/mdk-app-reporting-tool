@@ -1,0 +1,10 @@
+{
+  "name": "rt-lite-mempool",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MDK Worker Plugin: Bitcoin market data (price, network hashrate, hashprice) from the mempool.space API.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "seed": 20261008,
+  "historyDays": 400,
+  "units": [
+    {
+      "worker": "mu-1",
+      "model": "bitmain-antminer-s23",
+      "package": "antminer-mdk-worker",
+      "miners": 25,
+      "meter": "pm-01",
+      "mockPortBase": 14100
+    },
+    {
+      "worker": "mu-2",
+      "model": "bitmain-antminer-s23",
+      "package": "antminer-mdk-worker",
+      "miners": 25,
+      "meter": "pm-02",
+      "mockPortBase": 14200
+    },
+    {
+      "worker": "mu-3",
+      "model": "microbt-whatsminer-m70s",
+      "package": "whatsminer-mdk-worker",
+      "miners": 25,
+      "meter": "pm-03",
+      "mockPortBase": 14300
+    },
+    {
+      "worker": "mu-4",
+      "model": "microbt-whatsminer-m70s",
+      "package": "whatsminer-mdk-worker",
+      "miners": 25,
+      "meter": "pm-04",
+      "mockPortBase": 14400
+    }
+  ],
+  "siteMeter": "pm-site",
+  "meterWorker": "meters",
+  "meterMockPortBase": 15020,
+  "pool": "ocean",
+  "poolMockPort": 15100,
+  "market": "mempool"
+}

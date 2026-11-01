@@ -1,0 +1,20 @@
+{
+  "models": [
+    {
+      "id": "bitmain-antminer-s23",
+      "vendor": "Bitmain",
+      "model": "Antminer S23",
+      "displayName": "Antminer S23",
+      "nominalHashrateThs": 318,
+      "nominalPowerW": 3498
+    },
+    {
+      "id": "microbt-whatsminer-m70s",
+      "vendor": "MicroBT",
+      "model": "WhatsMiner M70S",
+      "displayName": "WhatsMiner M70S",
+      "nominalHashrateThs": 258,
+      "nominalPowerW": 3225
+    }
+  ]
+}

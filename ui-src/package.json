@@ -1,0 +1,34 @@
+{
+  "name": "reporting-tool-lite-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "gen:routes": "node scripts/gen-route-table.ts",
+    "gen:routes:check": "node scripts/gen-route-table.ts --check"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.59.0",
+    "@tetherto/mdk-react-adapter": "0.13.0",
+    "@tetherto/mdk-react-devkit": "0.13.0",
+    "@tetherto/mdk-ui-foundation": "0.13.0",
+    "@types/node": "24.19.2",
+    "@types/react": "^19.2.14",
+    "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "^4.1.12",
+    "oxfmt": "0.74.0",
+    "oxlint": "1.63.0",
+    "oxlint-tsgolint": "0.22.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router": "^8.3.0",
+    "typescript": "^5.7.2",
+    "vite": "^7.0.0",
+    "vitest": "4.1.12",
+    "zod": "4.6.7"
+  }
+}

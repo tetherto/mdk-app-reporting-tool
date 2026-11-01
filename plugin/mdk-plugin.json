@@ -1,0 +1,2328 @@
+{
+  "name": "reporting",
+  "version": "0.13.0",
+  "description": "Reporting Tool Lite: operations and financial reports for one mining site.",
+  "routes": [
+    {
+      "id": "reporting.site.get",
+      "handler": "./controllers/site.js",
+      "safety": "read-only",
+      "description": "The site: name, timezone, mining units, miner types present, which data sources are wired, and how far back history goes",
+      "http": {
+        "method": "GET",
+        "path": "/api/reporting/site",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "site": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "timezone"
+                      ]
+                    },
+                    "miningUnits": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      }
+                    },
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "vendor": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "nominalHashrateThs": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "nominalPowerW": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "displayName",
+                          "vendor",
+                          "nominalHashrateThs",
+                          "nominalPowerW"
+                        ]
+                      }
+                    },
+                    "meters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "siteMeter": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "label",
+                          "siteMeter"
+                        ]
+                      }
+                    },
+                    "sources": {
+                      "type": "object",
+                      "properties": {
+                        "miners": {
+                          "type": "boolean"
+                        },
+                        "pool": {
+                          "type": "boolean"
+                        },
+                        "poolSplit": {
+                          "type": "boolean"
+                        },
+                        "poolFee": {
+                          "type": "boolean"
+                        },
+                        "market": {
+                          "type": "boolean"
+                        },
+                        "meters": {
+                          "type": "boolean"
+                        },
+                        "siteMeter": {
+                          "type": "boolean"
+                        },
+                        "costs": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "miners",
+                        "pool",
+                        "poolSplit",
+                        "poolFee",
+                        "market",
+                        "meters",
+                        "siteMeter",
+                        "costs"
+                      ]
+                    },
+                    "history": {
+                      "type": "object",
+                      "properties": {
+                        "firstTs": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "lastTs": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "firstTs",
+                        "lastTs"
+                      ]
+                    },
+                    "collector": {
+                      "type": "object",
+                      "properties": {
+                        "kernelConnected": {
+                          "type": "boolean"
+                        },
+                        "lastSampleAt": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "lastError": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sampleIntervalSec": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        }
+                      },
+                      "required": [
+                        "kernelConnected",
+                        "lastSampleAt",
+                        "lastError",
+                        "sampleIntervalSec"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "site",
+                    "miningUnits",
+                    "models",
+                    "meters",
+                    "sources",
+                    "history",
+                    "collector"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "errors": {
+        "ERR_APP_NOT_READY": "500: the app's store is not open yet"
+      }
+    },
+    {
+      "id": "reporting.operations.get",
+      "handler": "./controllers/operations.js",
+      "safety": "read-only",
+      "description": "Hashrate, power, efficiency, nominal values and miner status per period bucket, for the site, each mining unit and each miner type",
+      "http": {
+        "method": "GET",
+        "path": "/api/reporting/operations",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "Range start, ms since epoch (default: 30 days before end)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "description": "Range end, ms since epoch, exclusive (default: now)",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": false,
+            "description": "Bucket size in the site's timezone",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hour",
+                "day",
+                "week",
+                "month"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "range": {
+                      "type": "object",
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "granularity": {
+                          "type": "string",
+                          "enum": [
+                            "hour",
+                            "day",
+                            "week",
+                            "month"
+                          ]
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "start",
+                        "end",
+                        "granularity",
+                        "timezone"
+                      ]
+                    },
+                    "units": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      }
+                    },
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "vendor": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "nominalHashrateThs": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "nominalPowerW": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "displayName",
+                          "vendor",
+                          "nominalHashrateThs",
+                          "nominalPowerW"
+                        ]
+                      }
+                    },
+                    "buckets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "coveredSec": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "hashrateThs": {
+                            "type": "object",
+                            "properties": {
+                              "site": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "byUnit": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "byModel": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "site",
+                              "byUnit",
+                              "byModel"
+                            ]
+                          },
+                          "powerW": {
+                            "type": "object",
+                            "properties": {
+                              "site": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "byUnit": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "byModel": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "site",
+                              "byUnit",
+                              "byModel"
+                            ]
+                          },
+                          "energyMWh": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "efficiencyWThs": {
+                            "type": "object",
+                            "properties": {
+                              "site": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "byUnit": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "byModel": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "site",
+                              "byUnit",
+                              "byModel"
+                            ]
+                          },
+                          "nominal": {
+                            "type": "object",
+                            "properties": {
+                              "hashrateThs": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "powerW": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "efficiencyWThs": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "byUnit": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": "object",
+                                  "properties": {
+                                    "hashrateThs": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "powerW": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "efficiencyWThs": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "hashrateThs",
+                                    "powerW",
+                                    "efficiencyWThs"
+                                  ]
+                                }
+                              },
+                              "byModel": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": "object",
+                                  "properties": {
+                                    "hashrateThs": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "powerW": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "efficiencyWThs": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "hashrateThs",
+                                    "powerW",
+                                    "efficiencyWThs"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "hashrateThs",
+                              "powerW",
+                              "efficiencyWThs",
+                              "byUnit",
+                              "byModel"
+                            ]
+                          },
+                          "miners": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "status": {
+                            "type": "object",
+                            "properties": {
+                              "online": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "error": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "offline": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "sleep": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "maintenance": {
+                                "type": "number",
+                                "minimum": 0
+                              }
+                            },
+                            "required": [
+                              "online",
+                              "error",
+                              "offline",
+                              "sleep",
+                              "maintenance"
+                            ]
+                          },
+                          "ts": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "coveredSec",
+                          "hashrateThs",
+                          "powerW",
+                          "energyMWh",
+                          "efficiencyWThs",
+                          "nominal",
+                          "miners",
+                          "status",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "summary": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "coveredSec": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "hashrateThs": {
+                          "type": "object",
+                          "properties": {
+                            "site": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "byUnit": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "byModel": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "site",
+                            "byUnit",
+                            "byModel"
+                          ]
+                        },
+                        "powerW": {
+                          "type": "object",
+                          "properties": {
+                            "site": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "byUnit": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "byModel": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "site",
+                            "byUnit",
+                            "byModel"
+                          ]
+                        },
+                        "energyMWh": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "efficiencyWThs": {
+                          "type": "object",
+                          "properties": {
+                            "site": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "byUnit": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "byModel": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "site",
+                            "byUnit",
+                            "byModel"
+                          ]
+                        },
+                        "nominal": {
+                          "type": "object",
+                          "properties": {
+                            "hashrateThs": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "powerW": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "efficiencyWThs": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "byUnit": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                  "hashrateThs": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "powerW": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "efficiencyWThs": {
+                                    "type": [
+                                      "number",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "hashrateThs",
+                                  "powerW",
+                                  "efficiencyWThs"
+                                ]
+                              }
+                            },
+                            "byModel": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                  "hashrateThs": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "powerW": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "efficiencyWThs": {
+                                    "type": [
+                                      "number",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "hashrateThs",
+                                  "powerW",
+                                  "efficiencyWThs"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "hashrateThs",
+                            "powerW",
+                            "efficiencyWThs",
+                            "byUnit",
+                            "byModel"
+                          ]
+                        },
+                        "miners": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "status": {
+                          "type": "object",
+                          "properties": {
+                            "online": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "error": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "offline": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "sleep": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "maintenance": {
+                              "type": "number",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "online",
+                            "error",
+                            "offline",
+                            "sleep",
+                            "maintenance"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "coveredSec",
+                        "hashrateThs",
+                        "powerW",
+                        "energyMWh",
+                        "efficiencyWThs",
+                        "nominal",
+                        "miners",
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "range",
+                    "units",
+                    "models",
+                    "buckets",
+                    "summary"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "errors": {
+        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
+        "ERR_BAD_RANGE": "400: `start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years)"
+      }
+    },
+    {
+      "id": "reporting.miners.get",
+      "handler": "./controllers/miners.js",
+      "safety": "read-only",
+      "description": "The fleet as of the latest sample: miner counts per type by status and power mode, power per type",
+      "http": {
+        "method": "GET",
+        "path": "/api/reporting/miners",
+        "parameters": [
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "description": "true samples the site before answering",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ts": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "intervalS": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "vendor": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "nominalHashrateThs": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "nominalPowerW": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "total": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "offline": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "error": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "sleep": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "low": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "normal": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "high": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "maintenance": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "powerW": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "displayName",
+                          "vendor",
+                          "nominalHashrateThs",
+                          "nominalPowerW",
+                          "total",
+                          "offline",
+                          "error",
+                          "sleep",
+                          "low",
+                          "normal",
+                          "high",
+                          "maintenance",
+                          "powerW"
+                        ]
+                      }
+                    },
+                    "units": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "total": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "offline": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "error": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "sleep": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "low": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "normal": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "high": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "maintenance": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "powerW": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      }
+                    },
+                    "site": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "offline": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "error": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "sleep": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "low": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "normal": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "high": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "maintenance": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "powerW": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "offline",
+                        "error",
+                        "sleep",
+                        "low",
+                        "normal",
+                        "high",
+                        "maintenance",
+                        "powerW"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ts",
+                    "models",
+                    "units",
+                    "site"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "errors": {
+        "ERR_APP_NOT_READY": "500: the app's store is not open yet"
+      }
+    },
+    {
+      "id": "reporting.consumption.get",
+      "handler": "./controllers/consumption.js",
+      "safety": "read-only",
+      "description": "Energy per power meter per period bucket, in MWh, with the site meter apart",
+      "http": {
+        "method": "GET",
+        "path": "/api/reporting/consumption",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "Range start, ms since epoch",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "description": "Range end, ms since epoch, exclusive",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": false,
+            "description": "Bucket size in the site's timezone",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hour",
+                "day",
+                "week",
+                "month"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "range": {
+                      "type": "object",
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "granularity": {
+                          "type": "string",
+                          "enum": [
+                            "hour",
+                            "day",
+                            "week",
+                            "month"
+                          ]
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "start",
+                        "end",
+                        "granularity",
+                        "timezone"
+                      ]
+                    },
+                    "meters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "label"
+                        ]
+                      }
+                    },
+                    "siteMeter": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label"
+                      ]
+                    },
+                    "buckets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ts": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "byMeter": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "type": [
+                                "number",
+                                "null"
+                              ],
+                              "minimum": 0
+                            }
+                          },
+                          "siteMeterMWh": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "ts",
+                          "byMeter",
+                          "siteMeterMWh"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "range",
+                    "meters",
+                    "siteMeter",
+                    "buckets"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "errors": {
+        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
+        "ERR_BAD_RANGE": "400: `start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years)"
+      }
+    },
+    {
+      "id": "reporting.financials.get",
+      "handler": "./controllers/financials.js",
+      "safety": "read-only",
+      "description": "Pool payouts, subsidy / fee split, revenue at production-date price, network hashprice, energy, hashrate and Cost Input costs per period bucket, with every per-MWh and per-PH/s/day figure",
+      "http": {
+        "method": "GET",
+        "path": "/api/reporting/financials",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "Range start, ms since epoch",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "description": "Range end, ms since epoch, exclusive",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": false,
+            "description": "Bucket size in the site's timezone",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hour",
+                "day",
+                "week",
+                "month"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "range": {
+                      "type": "object",
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "granularity": {
+                          "type": "string",
+                          "enum": [
+                            "hour",
+                            "day",
+                            "week",
+                            "month"
+                          ]
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "start",
+                        "end",
+                        "granularity",
+                        "timezone"
+                      ]
+                    },
+                    "latestPriceUsd": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "split": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "pool",
+                        "network"
+                      ]
+                    },
+                    "buckets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "payouts": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "btc": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "poolFeeBtc": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "grossBtc": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "subsidyBtc": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "feesBtc": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0
+                          },
+                          "feePercent": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "priceUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "revenueUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "grossRevenueUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "networkHashrateHs": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "networkHashpriceUsdPerPhsDay": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "networkHashpriceBtcPerPhsDay": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "networkFeeRateSatsVb": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "coveredSec": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "hashrateThs": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "powerW": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "energyMWh": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "nominalHashrateThs": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "nominalPowerW": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "nominalEnergyMWh": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "uptimePercent": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "capacityFactorPercent": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "energyCostUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "operationsCostUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "allInCostUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "revenueUsdPerMWh": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "grossRevenueUsdPerMWh": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "revenueSatsPerMWh": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "grossRevenueSatsPerMWh": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "hashRevenueUsdPerPhsDay": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "grossHashRevenueUsdPerPhsDay": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "hashRevenueSatsPerPhsDay": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "grossHashRevenueSatsPerPhsDay": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "energyCostUsdPerMWh": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "operationsCostUsdPerMWh": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "allInCostUsdPerMWh": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "hashCostUsdPerPhsDay": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "hashCostSatsPerPhsDay": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "productionCostUsdPerBtc": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "ts": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "payouts",
+                          "btc",
+                          "poolFeeBtc",
+                          "grossBtc",
+                          "subsidyBtc",
+                          "feesBtc",
+                          "feePercent",
+                          "priceUsd",
+                          "revenueUsd",
+                          "grossRevenueUsd",
+                          "networkHashrateHs",
+                          "networkHashpriceUsdPerPhsDay",
+                          "networkHashpriceBtcPerPhsDay",
+                          "networkFeeRateSatsVb",
+                          "coveredSec",
+                          "hashrateThs",
+                          "powerW",
+                          "energyMWh",
+                          "nominalHashrateThs",
+                          "nominalPowerW",
+                          "nominalEnergyMWh",
+                          "uptimePercent",
+                          "capacityFactorPercent",
+                          "energyCostUsd",
+                          "operationsCostUsd",
+                          "allInCostUsd",
+                          "revenueUsdPerMWh",
+                          "grossRevenueUsdPerMWh",
+                          "revenueSatsPerMWh",
+                          "grossRevenueSatsPerMWh",
+                          "hashRevenueUsdPerPhsDay",
+                          "grossHashRevenueUsdPerPhsDay",
+                          "hashRevenueSatsPerPhsDay",
+                          "grossHashRevenueSatsPerPhsDay",
+                          "energyCostUsdPerMWh",
+                          "operationsCostUsdPerMWh",
+                          "allInCostUsdPerMWh",
+                          "hashCostUsdPerPhsDay",
+                          "hashCostSatsPerPhsDay",
+                          "productionCostUsdPerBtc",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "summary": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "payouts": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "btc": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "poolFeeBtc": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        },
+                        "grossBtc": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        },
+                        "subsidyBtc": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        },
+                        "feesBtc": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        },
+                        "feePercent": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "priceUsd": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "revenueUsd": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "grossRevenueUsd": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "networkHashrateHs": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "networkHashpriceUsdPerPhsDay": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "networkHashpriceBtcPerPhsDay": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "networkFeeRateSatsVb": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "coveredSec": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "hashrateThs": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "powerW": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "energyMWh": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "nominalHashrateThs": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "nominalPowerW": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "nominalEnergyMWh": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "uptimePercent": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "capacityFactorPercent": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "energyCostUsd": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "operationsCostUsd": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "allInCostUsd": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "revenueUsdPerMWh": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "grossRevenueUsdPerMWh": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "revenueSatsPerMWh": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "grossRevenueSatsPerMWh": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "hashRevenueUsdPerPhsDay": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "grossHashRevenueUsdPerPhsDay": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "hashRevenueSatsPerPhsDay": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "grossHashRevenueSatsPerPhsDay": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "energyCostUsdPerMWh": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "operationsCostUsdPerMWh": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "allInCostUsdPerMWh": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "hashCostUsdPerPhsDay": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "hashCostSatsPerPhsDay": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "productionCostUsdPerBtc": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "payouts",
+                        "btc",
+                        "poolFeeBtc",
+                        "grossBtc",
+                        "subsidyBtc",
+                        "feesBtc",
+                        "feePercent",
+                        "priceUsd",
+                        "revenueUsd",
+                        "grossRevenueUsd",
+                        "networkHashrateHs",
+                        "networkHashpriceUsdPerPhsDay",
+                        "networkHashpriceBtcPerPhsDay",
+                        "networkFeeRateSatsVb",
+                        "coveredSec",
+                        "hashrateThs",
+                        "powerW",
+                        "energyMWh",
+                        "nominalHashrateThs",
+                        "nominalPowerW",
+                        "nominalEnergyMWh",
+                        "uptimePercent",
+                        "capacityFactorPercent",
+                        "energyCostUsd",
+                        "operationsCostUsd",
+                        "allInCostUsd",
+                        "revenueUsdPerMWh",
+                        "grossRevenueUsdPerMWh",
+                        "revenueSatsPerMWh",
+                        "grossRevenueSatsPerMWh",
+                        "hashRevenueUsdPerPhsDay",
+                        "grossHashRevenueUsdPerPhsDay",
+                        "hashRevenueSatsPerPhsDay",
+                        "grossHashRevenueSatsPerPhsDay",
+                        "energyCostUsdPerMWh",
+                        "operationsCostUsdPerMWh",
+                        "allInCostUsdPerMWh",
+                        "hashCostUsdPerPhsDay",
+                        "hashCostSatsPerPhsDay",
+                        "productionCostUsdPerBtc"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "range",
+                    "latestPriceUsd",
+                    "split",
+                    "buckets",
+                    "summary"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "errors": {
+        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
+        "ERR_BAD_RANGE": "400: `start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years)"
+      }
+    },
+    {
+      "id": "reporting.costs.get",
+      "handler": "./controllers/costs-get.js",
+      "safety": "read-only",
+      "description": "Cost Input for one year: monthly energy and operations cost in USD, twelve months",
+      "http": {
+        "method": "GET",
+        "path": "/api/reporting/costs",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Calendar year (default: this year in the site's timezone)",
+            "schema": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 2100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "year": {
+                      "type": "integer",
+                      "minimum": 2000,
+                      "maximum": 2100
+                    },
+                    "months": {
+                      "minItems": 12,
+                      "maxItems": 12,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "month": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "energyUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "operationsUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "updatedAt": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "month",
+                          "energyUsd",
+                          "operationsUsd",
+                          "updatedAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "year",
+                    "months"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "errors": {
+        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
+        "ERR_BAD_COSTS": "400: a month appears twice, or a value is not a non-negative number"
+      }
+    },
+    {
+      "id": "reporting.costs.put",
+      "handler": "./controllers/costs-put.js",
+      "safety": "write",
+      "description": "Sets monthly energy and operations cost (USD) for months of one year, in the app's own store; answers the whole year. The app's only write: it never reaches MDK or a device",
+      "http": {
+        "method": "PUT",
+        "path": "/api/reporting/costs",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "year": {
+                    "type": "integer",
+                    "minimum": 2000,
+                    "maximum": 2100
+                  },
+                  "months": {
+                    "minItems": 1,
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "month": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "energyUsd": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "maximum": 1000000000000
+                        },
+                        "operationsUsd": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0,
+                          "maximum": 1000000000000
+                        }
+                      },
+                      "required": [
+                        "month",
+                        "energyUsd",
+                        "operationsUsd"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "year",
+                  "months"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "year": {
+                      "type": "integer",
+                      "minimum": 2000,
+                      "maximum": 2100
+                    },
+                    "months": {
+                      "minItems": 12,
+                      "maxItems": 12,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "month": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 12
+                          },
+                          "energyUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "operationsUsd": {
+                            "type": [
+                              "number",
+                              "null"
+                            ],
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "updatedAt": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ],
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "month",
+                          "energyUsd",
+                          "operationsUsd",
+                          "updatedAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "year",
+                    "months"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "errors": {
+        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
+        "ERR_BAD_COSTS": "400: a month appears twice, or a value is not a non-negative number"
+      }
+    }
+  ]
+}

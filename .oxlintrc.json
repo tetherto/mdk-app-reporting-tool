@@ -1,0 +1,55 @@
+{
+  "$schema": "./ui-src/node_modules/oxlint/configuration_schema.json",
+  "options": {
+    "typeAware": true
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "dev/.mdk-satec",
+    ".trash",
+    "dev/apps",
+    "dev/.mdk",
+    "dev/mdk.yaml",
+    "ui",
+    "plugin/mdk-plugin.json",
+    "coverage",
+    "*.tsbuildinfo"
+  ],
+  "plugins": ["eslint", "oxc", "react", "typescript", "unicorn", "import", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "react-in-jsx-scope": "off",
+    "no-shadow": "off",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-spread": "warn",
+    "typescript/no-base-to-string": "warn",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/filename-case": [
+      "error",
+      {
+        "case": "kebabCase"
+      }
+    ],
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-array-reverse": "off",
+    "import/no-unassigned-import": [
+      "error",
+      {
+        "allow": ["**/*.css"]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["plugin/**/*.js", "scripts/**/*.js", "dev/**/*.js"],
+      "env": {
+        "node": true,
+        "commonjs": true
+      }
+    }
+  ]
+}

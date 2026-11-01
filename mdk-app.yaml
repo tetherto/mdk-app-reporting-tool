@@ -1,0 +1,21 @@
+# Reporting Tool Lite: operations and financial reports for one mining site,
+# read from its MDK workers. plugin/mdk-plugin.json holds the route table.
+id: io.tether.reporting-tool-lite
+version: 0.13.0
+displayName: Reporting Tool Lite
+description: "Operations and financial reports for one mining site, read from its MDK workers."
+# Read-only Kernel access: list workers, pull device telemetry and state
+# (telemetry.pull and state.pull are `devices: read`). Never `devices: write`.
+permissions:
+  - resources: [workers]
+    verbs: [list, read]
+  - resources: [devices]
+    verbs: [read]
+# Background collector and store, started before the routes serve.
+main: ./main.js
+# Overridden by the app's `config` in mdk.yaml.
+config:
+  siteConfig: ./config/site.json
+  catalogue: ./config/hardware-catalogue.json
+  sampleIntervalSec: 300
+  historyDays: 400
