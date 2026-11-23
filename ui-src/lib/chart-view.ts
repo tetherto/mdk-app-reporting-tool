@@ -23,3 +23,27 @@ export type ChartView = {
   series: ChartSeries[];
   empty: boolean;
 };
+
+/**
+ * The most value labels a chart prints: a year of monthly bars, which for a
+ * rolling year (Last 12 months) is the 13 months it touches. More run together.
+ */
+export const MAX_LABELLED_BARS = 13;
+
+/**
+ * Whether a chart's bars have room for a value label each: few enough buckets
+ * times the bars side by side in each (one per stack when stacked, else one
+ * per bar series; lines carry no labels). Dense charts leave values to the
+ * tooltip.
+ */
+export const fitsValueLabels = (
+  view: Pick<ChartView, "labels" | "series">,
+  stacked: boolean,
+): boolean => {
+  const bars = view.series.filter((s) => s.type !== "line");
+  const perBucket = stacked ? new Set(bars.map((s) => s.stack ?? "")).size : bars.length;
+  return view.labels.length * perBucket <= MAX_LABELLED_BARS;
+};
+
+/** A bar's value label, or none for a zero or a value that rounds to zero ("0", "0.00"). */
+export const valueLabel = (text: string): string => (/[1-9]/.test(text) ? text : "");

@@ -7,9 +7,9 @@ export default defineConfig({
     include: ["**/*.test.ts", "**/*.test.tsx"],
     exclude: ["node_modules/**"],
     environment: "node",
-    // MDK's UI packages publish ESM with directory and extensionless imports,
-    // which Node's loader rejects. Let Vite transform them instead
-    // (docs/mdk-friction.md).
+    // MDK's UI packages import directories (`export * from './primitives'`),
+    // which Node's ESM loader refuses, so Vite transforms them instead of
+    // handing them to Node (docs/mdk-friction.md).
     server: { deps: { inline: [/@tetherto\/mdk-/] } },
     // `npm run test:coverage`, for CI's coverage gate. It measures the logic
     // the tests cover: the API layer, the shared helpers and each feature's

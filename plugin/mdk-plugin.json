@@ -1,6 +1,7 @@
 {
+  "routeTableVersion": "1",
   "name": "reporting",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Reporting Tool Lite: operations and financial reports for one mining site.",
   "routes": [
     {
@@ -13,6 +14,7 @@
         "path": "/api/reporting/site",
         "responses": {
           "200": {
+            "description": "The site.",
             "content": {
               "application/json": {
                 "schema": {
@@ -223,12 +225,47 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "`ERR_APP_NOT_READY`: the app's store is not open yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_APP_NOT_READY",
+                "description": "the app's store is not open yet"
+              }
+            ]
           }
         }
       },
-      "errors": {
-        "ERR_APP_NOT_READY": "500: the app's store is not open yet"
-      }
+      "errors": [
+        "ERR_APP_NOT_READY"
+      ]
     },
     {
       "id": "reporting.operations.get",
@@ -279,6 +316,7 @@
         ],
         "responses": {
           "200": {
+            "description": "The operations report.",
             "content": {
               "application/json": {
                 "schema": {
@@ -929,13 +967,83 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "`ERR_BAD_RANGE`: `start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_BAD_RANGE",
+                "description": "`start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years)"
+              }
+            ]
+          },
+          "503": {
+            "description": "`ERR_APP_NOT_READY`: the app's store is not open yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_APP_NOT_READY",
+                "description": "the app's store is not open yet"
+              }
+            ]
           }
         }
       },
-      "errors": {
-        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
-        "ERR_BAD_RANGE": "400: `start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years)"
-      }
+      "errors": [
+        "ERR_APP_NOT_READY",
+        "ERR_BAD_RANGE"
+      ]
     },
     {
       "id": "reporting.miners.get",
@@ -962,6 +1070,7 @@
         ],
         "responses": {
           "200": {
+            "description": "The fleet snapshot.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1208,12 +1317,47 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "`ERR_APP_NOT_READY`: the app's store is not open yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_APP_NOT_READY",
+                "description": "the app's store is not open yet"
+              }
+            ]
           }
         }
       },
-      "errors": {
-        "ERR_APP_NOT_READY": "500: the app's store is not open yet"
-      }
+      "errors": [
+        "ERR_APP_NOT_READY"
+      ]
     },
     {
       "id": "reporting.consumption.get",
@@ -1264,6 +1408,7 @@
         ],
         "responses": {
           "200": {
+            "description": "The consumption report.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1386,13 +1531,83 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "`ERR_BAD_RANGE`: `start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_BAD_RANGE",
+                "description": "`start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years)"
+              }
+            ]
+          },
+          "503": {
+            "description": "`ERR_APP_NOT_READY`: the app's store is not open yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_APP_NOT_READY",
+                "description": "the app's store is not open yet"
+              }
+            ]
           }
         }
       },
-      "errors": {
-        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
-        "ERR_BAD_RANGE": "400: `start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years)"
-      }
+      "errors": [
+        "ERR_APP_NOT_READY",
+        "ERR_BAD_RANGE"
+      ]
     },
     {
       "id": "reporting.financials.get",
@@ -1443,6 +1658,7 @@
         ],
         "responses": {
           "200": {
+            "description": "The financials report.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2084,13 +2300,83 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "`ERR_BAD_RANGE`: `start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_BAD_RANGE",
+                "description": "`start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years)"
+              }
+            ]
+          },
+          "503": {
+            "description": "`ERR_APP_NOT_READY`: the app's store is not open yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_APP_NOT_READY",
+                "description": "the app's store is not open yet"
+              }
+            ]
           }
         }
       },
-      "errors": {
-        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
-        "ERR_BAD_RANGE": "400: `start` is not before `end`, or the range is too long for the granularity (hour: 93 days, others: 3 years)"
-      }
+      "errors": [
+        "ERR_APP_NOT_READY",
+        "ERR_BAD_RANGE"
+      ]
     },
     {
       "id": "reporting.costs.get",
@@ -2115,6 +2401,7 @@
         ],
         "responses": {
           "200": {
+            "description": "The year's costs.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2178,13 +2465,83 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "`ERR_BAD_COSTS`: `year` is outside the years Cost Input covers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_BAD_COSTS",
+                "description": "`year` is outside the years Cost Input covers"
+              }
+            ]
+          },
+          "503": {
+            "description": "`ERR_APP_NOT_READY`: the app's store is not open yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_APP_NOT_READY",
+                "description": "the app's store is not open yet"
+              }
+            ]
           }
         }
       },
-      "errors": {
-        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
-        "ERR_BAD_COSTS": "400: a month appears twice, or a value is not a non-negative number"
-      }
+      "errors": [
+        "ERR_APP_NOT_READY",
+        "ERR_BAD_COSTS"
+      ]
     },
     {
       "id": "reporting.costs.put",
@@ -2253,6 +2610,7 @@
         },
         "responses": {
           "200": {
+            "description": "The whole year's costs, after the update.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2316,13 +2674,83 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "`ERR_BAD_COSTS`: `year` is missing or outside the years Cost Input covers, `months` is empty, a month is outside 1 to 12 or appears twice, or a cost is not a non-negative number or null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_BAD_COSTS",
+                "description": "`year` is missing or outside the years Cost Input covers, `months` is empty, a month is outside 1 to 12 or appears twice, or a cost is not a non-negative number or null"
+              }
+            ]
+          },
+          "503": {
+            "description": "`ERR_APP_NOT_READY`: the app's store is not open yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "statusCode",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "description": "The HTTP status, repeated."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "The HTTP status text, such as `Bad Request`."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead."
+                    }
+                  }
+                }
+              }
+            },
+            "x-mdk-errors": [
+              {
+                "code": "ERR_APP_NOT_READY",
+                "description": "the app's store is not open yet"
+              }
+            ]
           }
         }
       },
-      "errors": {
-        "ERR_APP_NOT_READY": "500: the app's store is not open yet",
-        "ERR_BAD_COSTS": "400: a month appears twice, or a value is not a non-negative number"
-      }
+      "errors": [
+        "ERR_APP_NOT_READY",
+        "ERR_BAD_COSTS"
+      ]
     }
   ]
 }

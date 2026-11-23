@@ -31,12 +31,18 @@ export type RouteDefinition = {
   /** JSON request body, required when set. The Gateway validates it before the handler runs. */
   body?: z.ZodType;
   response: z.ZodType;
-  /** Error codes the route can return, besides Gateway validation errors. */
+  /** What a successful answer is: the OpenAPI description of the `200` response. */
+  answers: string;
+  /**
+   * Error codes the route can return, besides Gateway validation errors, as
+   * `"<status>: <when>"`. The status is the one the plugin sets on the error
+   * (`err.statusCode`); a test raises each code and checks it.
+   */
   errors?: Record<string, string>;
 };
 
 /** Every route reads the app's store, which main.js opens before the routes serve. */
-const NOT_READY = { ERR_APP_NOT_READY: "500: the app's store is not open yet" };
+const NOT_READY = { ERR_APP_NOT_READY: "503: the app's store is not open yet" };
 
 const RANGE_ERRORS = {
   ...NOT_READY,
@@ -52,9 +58,15 @@ const rangeQuery = z.object({
   granularity,
 });
 
+const COST_YEAR_ERRORS = {
+  ...NOT_READY,
+  ERR_BAD_COSTS: "400: `year` is outside the years Cost Input covers",
+};
+
 const COSTS_ERRORS = {
   ...NOT_READY,
-  ERR_BAD_COSTS: "400: a month appears twice, or a value is not a non-negative number",
+  ERR_BAD_COSTS:
+    "400: `year` is missing or outside the years Cost Input covers, `months` is empty, a month is outside 1 to 12 or appears twice, or a cost is not a non-negative number or null",
 };
 
 export const ROUTE_TABLE: RouteDefinition[] = [
@@ -67,6 +79,7 @@ export const ROUTE_TABLE: RouteDefinition[] = [
     description:
       "The site: name, timezone, mining units, miner types present, which data sources are wired, and how far back history goes",
     response: siteInfoSchema,
+    answers: "The site.",
     errors: NOT_READY,
   },
   {
@@ -93,6 +106,7 @@ export const ROUTE_TABLE: RouteDefinition[] = [
       granularity,
     }),
     response: operationsReportSchema,
+    answers: "The operations report.",
     errors: RANGE_ERRORS,
   },
   {
@@ -110,6 +124,7 @@ export const ROUTE_TABLE: RouteDefinition[] = [
         .describe("true samples the site before answering"),
     }),
     response: minersSnapshotSchema,
+    answers: "The fleet snapshot.",
     errors: NOT_READY,
   },
   {
@@ -130,6 +145,7 @@ export const ROUTE_TABLE: RouteDefinition[] = [
       granularity,
     }),
     response: consumptionReportSchema,
+    answers: "The consumption report.",
     errors: RANGE_ERRORS,
   },
   {
@@ -142,6 +158,7 @@ export const ROUTE_TABLE: RouteDefinition[] = [
       "Pool payouts, subsidy / fee split, revenue at production-date price, network hashprice, energy, hashrate and Cost Input costs per period bucket, with every per-MWh and per-PH/s/day figure",
     query: rangeQuery,
     response: financialsReportSchema,
+    answers: "The financials report.",
     errors: RANGE_ERRORS,
   },
   {
@@ -158,7 +175,8 @@ export const ROUTE_TABLE: RouteDefinition[] = [
         .describe("Calendar year (default: this year in the site's timezone)"),
     }),
     response: yearCostsSchema,
-    errors: COSTS_ERRORS,
+    answers: "The year's costs.",
+    errors: COST_YEAR_ERRORS,
   },
   {
     id: "reporting.costs.put",
@@ -170,6 +188,7 @@ export const ROUTE_TABLE: RouteDefinition[] = [
       "Sets monthly energy and operations cost (USD) for months of one year, in the app's own store; answers the whole year. The app's only write: it never reaches MDK or a device",
     body: costsUpdateSchema,
     response: yearCostsSchema,
+    answers: "The whole year's costs, after the update.",
     errors: COSTS_ERRORS,
   },
 ];
@@ -223,8 +242,68 @@ const parametersOf = (schema: z.ZodObject | undefined) => {
   });
 };
 
+/**
+ * The body of every error the Gateway answers for an app route (`errorResponse`
+ * in the Gateway's plugin-adapter.js), the same body its own sign-in routes
+ * declare.
+ */
+const ERROR_BODY = {
+  type: "object",
+  required: ["statusCode", "error", "message"],
+  properties: {
+    statusCode: { type: "integer", description: "The HTTP status, repeated." },
+    error: { type: "string", description: "The HTTP status text, such as `Bad Request`." },
+    message: {
+      type: "string",
+      description:
+        "The `ERR_*` code, followed by `: ` and a detail when there is one. For a request that fails the route's schema, the validation message instead.",
+    },
+  },
+};
+
+/** `"<status>: <when>"` as its parts; a malformed entry fails generation. */
+export const parseError = (code: string, entry: string): { status: number; when: string } => {
+  const match = /^([45]\d\d): (.+)$/s.exec(entry);
+  const [, status, when] = match ?? [];
+  if (status === undefined || when === undefined)
+    throw new Error(`${code}: expected "<status>: <when>", got "${entry}"`);
+  return { status: Number(status), when };
+};
+
+/**
+ * One OpenAPI response per error status, each naming its codes in
+ * `x-mdk-errors`: the shape the MDK schema and the Gateway's own routes use.
+ */
+const errorResponses = (errors: Record<string, string>) => {
+  const byStatus = new Map<number, { code: string; description: string }[]>();
+  for (const [code, entry] of Object.entries(errors)) {
+    const { status, when } = parseError(code, entry);
+    const codes = byStatus.get(status) ?? [];
+    codes.push({ code, description: when });
+    byStatus.set(status, codes);
+  }
+  const out: Record<string, unknown> = {};
+  for (const status of [...byStatus.keys()].sort((a, b) => a - b)) {
+    const codes = byStatus.get(status) ?? [];
+    out[status] = {
+      description: `${codes.map((c) => `\`${c.code}\`: ${c.description}`).join(". ")}.`,
+      content: { "application/json": { schema: ERROR_BODY } },
+      "x-mdk-errors": codes,
+    };
+  }
+  return out;
+};
+
+/**
+ * The MDK route-table schema generation this table is written against. With
+ * it, MDK's route-table schema holds the table to its OpenAPI-shaped rules as
+ * errors, not warnings.
+ */
+export const ROUTE_TABLE_VERSION = "1";
+
 /** The route table in the mdk-plugin.json format. */
 export const toPluginManifest = (meta: { name: string; version: string; description: string }) => ({
+  routeTableVersion: ROUTE_TABLE_VERSION,
   ...meta,
   routes: ROUTE_TABLE.map((route) => {
     const parameters = parametersOf(route.query);
@@ -236,7 +315,11 @@ export const toPluginManifest = (meta: { name: string; version: string; descript
         content: { "application/json": { schema: jsonSchema(route.body) } },
       };
     http.responses = {
-      200: { content: { "application/json": { schema: jsonSchema(route.response) } } },
+      200: {
+        description: route.answers,
+        content: { "application/json": { schema: jsonSchema(route.response) } },
+      },
+      ...(route.errors === undefined ? {} : errorResponses(route.errors)),
     };
 
     const entry: Record<string, unknown> = {
@@ -246,7 +329,7 @@ export const toPluginManifest = (meta: { name: string; version: string; descript
       description: route.description,
       http,
     };
-    if (route.errors !== undefined) entry.errors = route.errors;
+    if (route.errors !== undefined) entry.errors = Object.keys(route.errors);
     return entry;
   }),
 });

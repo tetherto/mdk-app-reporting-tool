@@ -3,7 +3,7 @@ import { CurrencyToggler } from "@tetherto/mdk-react-devkit";
 
 import type { Currency } from "../features/financials/financials-shape";
 import { CURRENCIES, isCurrency } from "../features/financials/financials-shape";
-import { BITCOIN_UNIT_LIST, isBitcoinUnit } from "../lib/format";
+import { BITCOIN_UNIT_LABELS, BITCOIN_UNIT_LIST, isBitcoinUnit } from "../lib/format";
 import { Field } from "./page";
 
 /** USD / BTC, for a chart's header (Hash Balance, Energy Balance). */
@@ -23,7 +23,7 @@ export const CurrencyToggle = ({
   />
 );
 
-/** BTC / sats under a BITCOIN UNIT label, for a page's toolbar (Revenue Summary, Subsidy / Fee). */
+/** BTC / Sats under a BITCOIN UNIT label, for a page's toolbar (Revenue Summary, Subsidy / Fee). */
 export const BitcoinUnitField = ({
   value,
   onChange,
@@ -33,7 +33,7 @@ export const BitcoinUnitField = ({
 }) => (
   <Field label="Bitcoin Unit">
     <CurrencyToggler
-      currencies={[...BITCOIN_UNIT_LIST]}
+      currencies={BITCOIN_UNIT_LIST.map((u) => ({ value: u, label: BITCOIN_UNIT_LABELS[u] }))}
       value={value}
       onChange={(v) => {
         if (isBitcoinUnit(v)) onChange(v);

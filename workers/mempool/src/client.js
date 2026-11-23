@@ -4,8 +4,11 @@
 // history only grows at the end and pages ask for it repeatedly.
 const { opts, logger } = require("@tetherto/mdk-worker/device");
 
-const BASE_URL = (opts.baseUrl || "https://mempool.space").replace(/\/$/, "");
-const TIMEOUT_MS = opts.timeoutMs || 15000;
+if (typeof opts.baseUrl !== "string" || opts.baseUrl.trim() === "") {
+  throw new Error("ERR_MEMPOOL_BASE_URL_MISSING");
+}
+const BASE_URL = opts.baseUrl.trim().replace(/\/$/, "");
+const TIMEOUT_MS = opts.timeoutMs || 60000;
 const DAY = 24 * 60 * 60 * 1000;
 
 const cache = new Map();

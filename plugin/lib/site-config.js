@@ -139,6 +139,8 @@ function loadConfig(appConfig, cwd = process.cwd()) {
     catalogue: parseCatalogue(readJson(resolve(appConfig.catalogue), "hardware catalogue")),
     historyDays,
     sampleIntervalSec,
+    // Pull a device directly when its worker serves no cached readings.
+    liveFallback: appConfig.liveFallback === true,
     seed: isString(appConfig.seed) ? resolve(appConfig.seed) : null,
   };
 }

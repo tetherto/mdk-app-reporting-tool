@@ -10,7 +10,9 @@
     "ui",
     "coverage",
     "**/package-lock.json",
-    "plugin/mdk-plugin.json"
+    "plugin/mdk-plugin.json",
+    "docs/openapi.json",
+    "docs/http-api.md"
   ],
   "sortPackageJson": {}
 }

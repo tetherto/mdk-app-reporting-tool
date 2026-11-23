@@ -82,38 +82,41 @@ const CostTable = ({ year, saved }: { year: number; saved: YearCosts }) => {
 
   return (
     <>
-      <table className="reporting-costs">
-        <thead>
-          <tr>
-            <th>Month</th>
-            {COST_FIELDS.map((f) => (
-              <th key={f.key}>{f.header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {draft.map((row) => (
-            <tr key={row.month}>
-              <td>{MONTH_NAMES[row.month - 1]}</td>
-              {COST_FIELDS.map(({ key: field, label }) => (
-                <td key={field}>
-                  <Input
-                    inputMode="decimal"
-                    prefix="$"
-                    wrapperClassName="reporting-costs__input"
-                    aria-label={`${MONTH_NAMES[row.month - 1]} ${label} cost`}
-                    aria-invalid={parseAmount(row[field]) === undefined}
-                    value={row[field]}
-                    placeholder="Cost in USD"
-                    onChange={(e) => setField(row.month, field, e.target.value)}
-                    onBlur={() => setField(row.month, field, tidyAmount(row[field]))}
-                  />
-                </td>
+      {/* Scrolls sideways rather than squeezing its columns on a narrow page. */}
+      <div className="reporting-costs__scroll">
+        <table className="reporting-costs">
+          <thead>
+            <tr>
+              <th>Month</th>
+              {COST_FIELDS.map((f) => (
+                <th key={f.key}>{f.header}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {draft.map((row) => (
+              <tr key={row.month}>
+                <td>{MONTH_NAMES[row.month - 1]}</td>
+                {COST_FIELDS.map(({ key: field, label }) => (
+                  <td key={field}>
+                    <Input
+                      inputMode="decimal"
+                      prefix="$"
+                      wrapperClassName="reporting-costs__input"
+                      aria-label={`${MONTH_NAMES[row.month - 1]} ${label} cost`}
+                      aria-invalid={parseAmount(row[field]) === undefined}
+                      value={row[field]}
+                      placeholder="Cost in USD"
+                      onChange={(e) => setField(row.month, field, e.target.value)}
+                      onBlur={() => setField(row.month, field, tidyAmount(row[field]))}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="reporting-costs__footer">
         {allValid ? null : (
           <span className="reporting-snapshot__error">

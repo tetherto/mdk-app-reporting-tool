@@ -14,7 +14,7 @@ import { toEnergyBalance } from "./energy-balance-shape";
 import { missingOf, withCostsMissing } from "./financials-shape";
 import { toHashBalance } from "./hash-balance-shape";
 import { figures, report, sources } from "./report-fixture";
-import { revenueChart, toRevenueSummary } from "./revenue-summary-shape";
+import { isUsdChartUnit, revenueChart, toRevenueSummary } from "./revenue-summary-shape";
 import { feeRateChart, subsidyFeeChart } from "./subsidy-fee-shape";
 
 describe("missingOf", () => {
@@ -84,6 +84,14 @@ describe("Revenue Summary", () => {
     const chart = revenueChart(report(), "report", "Demo Site");
     expect(chart.series[0]?.values).toEqual([55_000, 44_000]);
     expect(chart.unit).toBe("USD");
+  });
+
+  it("tells the chart's USD options from the bitcoin units the page shares with it", () => {
+    expect(isUsdChartUnit("receipt")).toBe(true);
+    expect(isUsdChartUnit("report")).toBe(true);
+    expect(isUsdChartUnit("BTC")).toBe(false);
+    expect(isUsdChartUnit("sats")).toBe(false);
+    expect(isUsdChartUnit("USD")).toBe(false);
   });
 });
 

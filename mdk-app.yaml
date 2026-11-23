@@ -1,7 +1,7 @@
 # Reporting Tool Lite: operations and financial reports for one mining site,
 # read from its MDK workers. plugin/mdk-plugin.json holds the route table.
 id: io.tether.reporting-tool-lite
-version: 0.13.0
+version: 0.14.0
 displayName: Reporting Tool Lite
 description: "Operations and financial reports for one mining site, read from its MDK workers."
 # Read-only Kernel access: list workers, pull device telemetry and state
@@ -19,3 +19,7 @@ config:
   catalogue: ./config/hardware-catalogue.json
   sampleIntervalSec: 300
   historyDays: 400
+  # Samples read each worker's cached snaps (the worker-infra `list` built-in),
+  # never the devices. A worker without that cache (a plain contract worker)
+  # leaves its devices offline; true pulls them one by one instead.
+  liveFallback: false

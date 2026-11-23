@@ -60,10 +60,14 @@ const FilterField = ({
 }) => (
   <Field label={label}>
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="reporting-filter">
+      {/* One width whatever is picked: a long name is cut short, and shown whole on hover. */}
+      <SelectTrigger
+        className="reporting-filter"
+        title={options.find((o) => o.value === value)?.label ?? "All"}
+      >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="reporting-filter__menu">
         <SelectItem value={ALL}>All</SelectItem>
         {options.map((o) => (
           <SelectItem key={o.value} value={o.value}>

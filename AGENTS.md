@@ -6,14 +6,14 @@ Reporting Tool Lite is an MDK app: one package with a Gateway plugin (`plugin/`)
 
 - `npm run fmt:check`, `npm run lint`, `npm run typecheck` and `npm test` must pass before a task is complete.
 - After any change under `ui-src/`, run `npm run build:ui` and commit `ui/`. GitHub installs run no build, so a stale `ui/` ships stale code. CI fails when `ui/` doesn't match a fresh build.
-- After any change to the routes, run `npm run gen:routes` and commit `plugin/mdk-plugin.json`. Never edit that file by hand.
-- After any change to `dev/mock-site/fleet.json`, the generator or the `permissions` in `mdk-app.yaml`, run `npm run dev:generate` and commit `dev/mdk.yaml` (its `spec.rbac` grants the app exactly those permissions). Never edit it by hand, and keep the app's permissions read-only.
+- After any change to the routes, run `npm run gen:routes` then `npm run docs:api`, and commit `plugin/mdk-plugin.json`, `docs/openapi.json` and `docs/http-api.md`. Never edit those files by hand. A route's `errors` entry is `"<status>: <when>"`, with the status the plugin sets on the error; a test checks it.
+- After any change to `dev/mock-site/fleet.json`, the generator or the `permissions` in `mdk-app.yaml`, run `npm run dev:generate` and commit `dev/mdk.yaml`. Its `spec.rbac` (the app's Kernel grant, the dev `viewers` and `cost-editors` groups) is generated too: never edit it by hand, and keep the app's permissions read-only.
 - `npm run validate` (`mdk validate app`) must pass.
 - For UI changes, run the stack and the dashboard (`npm start`) and look at the page before calling it done.
 
 ## Working rules
 
-- Build with MDK as it ships on npm (`@tetherto/mdk-*` 0.13.0): the CLI, the Kernel and Gateway, the workers, the UI packages and the dashboard shell (`mdk create dashboard`). The plugin uses the Kernel client the app runtime hands it (`config.mdkClient`). MDK's SATEC worker isn't published at all; setup takes it from the matching release tag. When MDK gets in the way, work around it in the smallest way and log the friction in `docs/mdk-friction.md`. Don't patch MDK packages from here.
+- Build with MDK as it ships on npm (`@tetherto/mdk-*` 0.13.1): the CLI, the Kernel and Gateway, the UI packages, the dashboard shell (`mdk create dashboard`), the workers. MDK's SATEC worker isn't published at all; setup takes it from the matching release tag. When MDK gets in the way, work around it in the smallest way and log the friction in `docs/mdk-friction.md`. Don't patch MDK packages from here.
 - Prefer an MDK or public worker to a custom one. `workers/mempool` exists only because MDK has no market-data worker. The mock site plays devices for real workers; it doesn't fake the workers.
 - The contract lives in `ui-src/api/contract.ts` as zod schemas: every request and response body, with the unit in numeric field names. The UI parses every response with it, the route table is generated from it, and `api/contract.test.ts` runs the plugin's reports on seeded history and checks them against it. Change the contract first, then the plugin and the UI.
 - Shared value lists (granularities, statuses, power modes) are `as const` tuples in the contract, with types derived from them. Don't repeat them elsewhere.

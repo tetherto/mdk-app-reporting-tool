@@ -3,6 +3,9 @@ import { SingleStatCard } from "@tetherto/mdk-react-devkit";
 import type { Tile } from "../features/financials/financials-shape";
 import { NotWired } from "./widget";
 
+/** The page's headline figure, in MDK's primary colour. */
+const ACCENT_COLOR = "var(--mdk-color-primary)";
+
 type TilesProps = {
   tiles: Tile[];
   /** Fixed columns; otherwise as many as fit. */
@@ -41,7 +44,7 @@ export const Tiles = ({ tiles, columns, className }: TilesProps) => {
             {...common}
             value={t.value}
             {...(t.tag === undefined ? {} : { tag: t.tag })}
-            {...(t.accent === true ? { className: "reporting-tile--accent" } : {})}
+            {...(t.accent === true ? { color: ACCENT_COLOR } : {})}
             detail={linesOf(t)}
           />
         ) : (

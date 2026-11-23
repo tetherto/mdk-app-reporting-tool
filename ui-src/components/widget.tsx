@@ -2,8 +2,9 @@ import type { QueryView } from "@tetherto/mdk-react-adapter";
 import {
   Button,
   ChartContainer,
-  EmptyState,
   ErrorCard,
+  ExternalLinkIcon,
+  PlugIcon,
   RightArrowIcon,
 } from "@tetherto/mdk-react-devkit";
 import type { ReactNode } from "react";
@@ -11,6 +12,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 
 import { APP_PATHS } from "../app-routes";
+import { Notice } from "./notice";
 
 /**
  * The sources a figure can need that a site may not have wired, in the order a
@@ -24,12 +26,12 @@ const README_URL = "https://github.com/tetherto/mdk-app-reporting-tool#";
 
 /**
  * What each missing source says, in full for a chart and `short` for a tile,
- * and where the builder wires it: a section of the README (`anchor`), or Cost
- * Input for costs.
+ * and where its link goes: a page of the app (`page`), or for what only the
+ * builder can wire, a section of the README (`anchor`).
  */
-const MISSING: Record<
+const MISSING_SOURCES: Record<
   MissingSource,
-  { text: string; short: string; link: string; anchor?: string }
+  { text: string; short: string; link: string } & ({ page: string } | { anchor: string })
 > = {
   pool: {
     text: "No pool is wired.",
@@ -44,11 +46,12 @@ const MISSING: Record<
     anchor: "market-data",
   },
   poolSplit: {
-    text: "Your pool worker does not report the subsidy / fee split.",
+    text: "Your pool does not report the subsidy / fee split. Revenue Summary estimates it from the network's fee share.",
     short: "No split reported",
-    // The pool is wired: the link explains the split, not how to wire a pool.
-    link: "About the split",
-    anchor: "wire-your-pool",
+    // The pool is wired and the operator can't change what it reports, so this
+    // points to the estimate rather than to setup docs.
+    link: "See the estimate",
+    page: APP_PATHS.REVENUE_SUMMARY,
   },
   split: {
     text: "The subsidy / fee split is unavailable: the pool doesn't report it and there is no network fee data for these days.",
@@ -60,34 +63,9 @@ const MISSING: Record<
     text: "No costs entered for this period.",
     short: "No costs entered",
     link: "Open Cost Input",
+    page: APP_PATHS.COST_INPUT,
   },
 };
-
-/** A plug, for a source that isn't connected. The devkit has no such icon. */
-const PlugIcon = ({ size = 32 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
-    <path
-      d="M12 4v7M20 4v7M9 11h14v5a7 7 0 0 1-14 0v-5ZM16 23v5"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-/** An arrow out of a box: the link opens in a new tab. */
-const ExternalIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-    <path
-      d="M7 1h4v4M11 1 5.5 6.5M9 7.5V11H1V3h3.5"
-      stroke="currentColor"
-      strokeWidth="1.1"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 
 /**
  * What a widget shows:
@@ -119,23 +97,23 @@ export function widgetState<T>(
   return isEmpty(view.data) ? { kind: "empty" } : { kind: "data" };
 }
 
-/** Where a missing source is wired: Cost Input inside the app, else the README in a new tab. */
+/** A missing source's link: a page of the app, or the README in a new tab. */
 const WireLink = ({ source }: { source: MissingSource }) => {
-  const { link, anchor } = MISSING[source];
-  return anchor === undefined ? (
-    <Link className="reporting-not-wired__link" to={`../${APP_PATHS.COST_INPUT}`}>
-      {link}
+  const missing = MISSING_SOURCES[source];
+  return "page" in missing ? (
+    <Link className="reporting-notice__link" to={`../${missing.page}`}>
+      {missing.link}
       <RightArrowIcon />
     </Link>
   ) : (
     <a
-      className="reporting-not-wired__link"
-      href={README_URL + anchor}
+      className="reporting-notice__link"
+      href={README_URL + missing.anchor}
       target="_blank"
       rel="noreferrer"
     >
-      {link}
-      <ExternalIcon />
+      {missing.link}
+      <ExternalLinkIcon size={12} />
     </a>
   );
 };
@@ -154,30 +132,16 @@ type NotWiredProps = {
   size?: NotWiredSize;
 };
 
-/** The not-wired message: a plug, what isn't wired, and a link to where it is wired. */
+/** The not-wired notice: a plug, what isn't wired, and a link to where it is wired. */
 export const NotWired = ({ source, size = "block" }: NotWiredProps) => {
-  const { text, short } = MISSING[source];
-  if (size === "inline")
-    return (
-      <div className="reporting-not-wired-inline">
-        <span className="reporting-not-wired-inline__text">
-          <PlugIcon size={14} />
-          {short}
-        </span>
-        <WireLink source={source} />
-      </div>
-    );
+  const { text, short } = MISSING_SOURCES[source];
+  const inline = size === "inline";
   return (
-    <EmptyState
-      className="reporting-not-wired"
-      image={<PlugIcon />}
-      size="md"
-      description={
-        <>
-          <span>{size === "short" ? `${short}.` : text}</span>
-          <WireLink source={source} />
-        </>
-      }
+    <Notice
+      icon={<PlugIcon size={inline ? 14 : 32} />}
+      message={size === "block" ? text : inline ? short : `${short}.`}
+      action={<WireLink source={source} />}
+      size={inline ? "inline" : "block"}
     />
   );
 };
@@ -195,13 +159,23 @@ type WidgetProps = {
   children?: ReactNode;
 };
 
-/** Four corner arrows, out to expand or in to collapse. The devkit has no such icon. */
+/**
+ * Four diagonal arrows, out to the corners to expand a chart and in to the
+ * centre to collapse it. The devkit has no such icon.
+ */
+const EXPAND_PATH =
+  "M6.5 6.5 2 2m0 4V2h4M9.5 6.5 14 2m-4 0h4v4M6.5 9.5 2 14m0-4v4h4M9.5 9.5 14 14m0-4v4h-4";
+const COLLAPSE_PATH =
+  "M2 2l4.5 4.5m0-4v4h-4M14 2 9.5 6.5m0-4v4h4M2 14l4.5-4.5m-4 0h4v4M14 14l-4.5-4.5m4 0h-4v4";
+
 const ExpandIcon = ({ collapse }: { collapse: boolean }) => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
     <path
-      d={collapse ? "M5 1v4H1M9 1v4h4M5 13V9H1M9 13V9h4" : "M1 5V1h4M13 5V1H9M1 9v4h4M13 9v4H9"}
+      d={collapse ? COLLAPSE_PATH : EXPAND_PATH}
       stroke="currentColor"
-      strokeWidth="1.25"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </svg>
 );
@@ -249,8 +223,6 @@ export const Widget = ({
       titleExtra={titleExtra}
       headerAction={actions}
       loading={state.kind === "loading"}
-      empty={state.kind === "empty"}
-      emptyMessage={EMPTY_MESSAGE}
     >
       <WidgetBody state={state} notWiredSize={notWiredSize}>
         {children}
@@ -271,8 +243,10 @@ const WidgetBody = ({ state, notWiredSize, children }: WidgetBodyProps) => {
       return <ErrorCard title="Could not load" error={state.message} />;
     case "not-wired":
       return <NotWired source={state.source} size={notWiredSize} />;
+    case "empty":
+      return <Notice message={EMPTY_MESSAGE} />;
     default:
-      // loading and empty are drawn by ChartContainer, which hides its children then.
+      // loading is drawn by ChartContainer, which hides its children then.
       return <>{children}</>;
   }
 };

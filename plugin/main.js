@@ -29,7 +29,7 @@ module.exports = async function main(appConfig, { logger }) {
   // The runtime has no stop hook: close the store cleanly when the process
   // exits. Both calls are synchronous, as an exit listener needs; a signal
   // listener would instead cancel the runtime's default exit on that signal.
-  // The Kernel client is the runtime's, and the runtime closes it.
+  // The Kernel client is the runtime's (lib/client.js), which closes it.
   process.once("exit", () => {
     collector.stop();
     store.close();

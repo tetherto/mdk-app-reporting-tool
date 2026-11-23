@@ -1,7 +1,7 @@
 /* Built to ui/style.css; the dashboard adds it to the page with the app. Layout
  * only, in the dashboard's `app` layer, which ranks above the devkit's: the
  * dashboard owns the chrome, fonts and theme, and colours come from the MDK
- * design tokens. Desktop-first. */
+ * design tokens. Desktop-first, narrowing to one column (the end of the file). */
 @layer app {
   .reporting-center {
     display: flex;
@@ -11,6 +11,9 @@
   }
 
   .reporting-page {
+    /* Layouts narrow on the app's own width, not the window's: the dashboard's
+     * sidebar takes a share of the window. */
+    container: reporting-page / inline-size;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -44,6 +47,59 @@
   .reporting-page__toolbar .mdk-period-control__reset {
     order: 2;
     margin-left: auto;
+  }
+
+  /* Every control in the toolbar (the Period select, the date range button,
+   * the segmented toggles, Reset, a page's own filters) on one surface and one
+   * height: each devkit control brings its own background and min-height.
+   * MDK's control tokens (tetherto/mdk-prv#773) match this background and
+   * border, but give only CurrencyToggler border-box sizing, so the others come
+   * out 2px taller. Keep the box-sizing, height and min-height lines after that
+   * upgrade unless MDK sizes every control with border-box. */
+  .reporting-page__toolbar {
+    --reporting-control-height: 40px;
+    --reporting-control-bg: var(--mdk-color-background-dark);
+    --reporting-control-border: var(--mdk-button-secondary-border);
+  }
+
+  .reporting-page__toolbar .mdk-select__trigger,
+  .reporting-page__toolbar .mdk-date-picker__trigger,
+  .reporting-page__toolbar .mdk_currency_toggler,
+  .reporting-page__toolbar .mdk-button--variant-secondary {
+    box-sizing: border-box;
+    height: var(--reporting-control-height);
+    min-height: 0;
+    padding-block: 0;
+    background-color: var(--reporting-control-bg);
+    border: 1px solid var(--reporting-control-border);
+  }
+
+  /* This layer outranks the devkit's, so its hover and open states come back here. */
+  .reporting-page__toolbar .mdk-select__trigger:hover,
+  .reporting-page__toolbar .mdk-select__trigger[data-state="open"] {
+    border-color: var(--mdk-color-primary);
+  }
+
+  .reporting-page__toolbar .mdk-button--variant-secondary:not(:disabled):hover {
+    border-color: var(--mdk-button-secondary-border-hover);
+  }
+
+  .reporting-page__toolbar .mdk-date-picker__trigger:hover:not(:disabled),
+  .reporting-page__toolbar .mdk-date-picker__trigger[data-state="open"] {
+    background-color: color-mix(in srgb, var(--mdk-color-primary) 20%, transparent);
+    border-color: var(--mdk-color-primary);
+  }
+
+  .reporting-page__toolbar .mdk_currency_toggler {
+    align-items: stretch;
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .reporting-page__toolbar .mdk_currency_toggler__button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 14px;
   }
 
   /* The segmented toggles, with the design's muted unselected and disabled options. */
@@ -83,8 +139,27 @@
     min-width: 112px;
   }
 
+  /* A toolbar filter (Miner Type, Mining Unit) keeps one width whatever is
+   * picked, cutting a long name short. Its menu is at least as wide and grows
+   * to the longest option, so options never wrap. */
   .reporting-filter {
-    min-width: 160px;
+    width: 200px;
+  }
+
+  .reporting-filter > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .reporting-filter__menu .mdk-select__viewport--popper {
+    width: max-content;
+    min-width: var(--radix-select-trigger-width);
+  }
+
+  .reporting-filter__menu .mdk-select__item {
+    white-space: nowrap;
   }
 
   .reporting-grid {
@@ -125,15 +200,16 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  /* MDK's SingleStatCard as the design's tile: a raised card, the caption on
-   * its own line under the name, a quiet tag, detail lines under the value. */
+  /* MDK's SingleStatCard as the design's tile: a raised card with no border
+   * (not even the accent variant's), the caption on its own line under the
+   * name, a quiet tag, detail lines under the value. */
   .reporting-tiles > .mdk-single-stat-card {
     display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 16px 16px 14px;
     background: var(--mdk-color-surface-elevated);
-    border: 1px solid var(--mdk-color-white-12);
+    border: none;
   }
 
   .reporting-tiles .mdk-single-stat-card__name {
@@ -148,11 +224,6 @@
 
   .reporting-tiles .mdk-single-stat-card__value {
     font-size: 18px;
-  }
-
-  /* The page's headline figure, in the accent colour. */
-  .reporting-tiles .reporting-tile--accent .mdk-single-stat-card__value {
-    color: var(--mdk-color-primary);
   }
 
   .reporting-tiles .mdk-single-stat-card__tag {
@@ -186,10 +257,9 @@
     grid-auto-rows: 1fr;
   }
 
-  /* A plain card around a devkit chart that brings its own title. */
+  /* Around a devkit chart that brings its own title, laid out like a widget. */
   .reporting-card {
     padding: 20px 24px;
-    background: var(--mdk-color-surface-elevated);
   }
 
   /* A narrow card beside a wider block, e.g. the Subsidy / Fees doughnut beside the tiles. */
@@ -204,13 +274,35 @@
     margin-top: 0;
   }
 
-  /* MDK's ChartContainer, drawn as the design's card: a raised panel with a
-   * plain white title. */
+  /* MDK's ChartContainer as the design's chart: no background, a plain white
+   * title. */
   .reporting-widget {
     min-width: 0;
     margin-top: 16px;
     padding: 20px 24px;
-    background: var(--mdk-color-surface-elevated);
+  }
+
+  /* A chart's units, level above their axes: the left axis's on the left, the
+   * right axis's on the right. */
+  .reporting-time-chart__units {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--mdk-color-text-muted);
+  }
+
+  /* A chart fills its card when the row stretches the card taller (beside
+   * stacked tiles or a taller chart): its own height is the least it takes. */
+  .reporting-widget > .mdk-chart-container__chart-area,
+  .reporting-time-chart {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+  }
+
+  .reporting-time-chart > .mdk-bar-chart {
+    flex: 1 0 auto;
   }
 
   .reporting-widget .mdk-chart-container__title {
@@ -219,33 +311,38 @@
     font-weight: 400;
   }
 
+  /* Room between a chart's title and what follows it in the title, e.g. its ⓘ. */
+  .reporting-widget .mdk-chart-container__title > * {
+    margin-left: 8px;
+  }
+
   /* The expand control is a bare icon, as in the design. */
   .reporting-widget__actions .mdk-button--variant-icon {
     background: transparent;
     border-color: transparent;
   }
 
-  /* A widget whose source isn't wired, as in the design: a muted plug, what
-   * is missing, and the link to wire it on its own line. */
-  .reporting-not-wired {
+  /* The app's one empty or "not available" state (Notice): a muted icon, the
+   * message, and its action on its own line. */
+  .reporting-notice {
     min-height: 240px;
     justify-content: center;
   }
 
-  .reporting-not-wired .mdk-empty-state__image {
+  .reporting-notice .mdk-empty-state__image {
     color: var(--mdk-color-text-muted);
   }
 
-  .reporting-not-wired .mdk-empty-state__description {
+  .reporting-notice .mdk-empty-state__description {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
   }
 
-  /* Where to wire it: in the accent colour, with an arrow (Cost Input) or an
+  /* A notice's link: in the accent colour, with an arrow (Cost Input) or an
    * arrow out of a box (the README, in a new tab), as in the design. */
-  .reporting-not-wired__link {
+  .reporting-notice__link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -253,7 +350,7 @@
     text-decoration: none;
   }
 
-  .reporting-not-wired__link:hover {
+  .reporting-notice__link:hover {
     text-decoration: underline;
     text-underline-offset: 3px;
   }
@@ -263,18 +360,19 @@
     display: none;
   }
 
-  /* A tile's (or a notice's) not-wired message: a small plug beside the
-   * short message, the link under them. */
-  .reporting-not-wired-inline {
+  /* An inline notice, in a tile under its name: a small icon beside the
+   * message, the action under them. */
+  .reporting-notice--inline {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+    min-height: 0;
     margin-top: 8px;
     font-size: 0.75rem;
   }
 
-  .reporting-not-wired-inline__text {
+  .reporting-notice__message {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -338,10 +436,6 @@
 
   .reporting-types .mdk-doughnut-chart__chart {
     grid-area: chart;
-  }
-
-  .reporting-types > .mdk-empty-state {
-    grid-area: legend;
   }
 
   /* Hash Revenue: the tiles over the network hashrate, the hashprice beside both. */
@@ -499,6 +593,12 @@
     cursor: help;
   }
 
+  /* Cost Input's table scrolls sideways once its columns reach their least
+   * readable width, rather than cutting off placeholders and decimals. */
+  .reporting-costs__scroll {
+    overflow-x: auto;
+  }
+
   .reporting-costs {
     width: 100%;
     border: 1px solid var(--mdk-color-white-12);
@@ -514,6 +614,7 @@
   }
 
   .reporting-costs th {
+    white-space: nowrap;
     padding-block: 12px;
     font-size: 12px;
     font-weight: normal;
@@ -526,7 +627,9 @@
     width: 33%;
   }
 
+  /* Room for the placeholder ("Cost in USD") or an amount with its decimals. */
   .reporting-costs__input {
+    min-width: 160px;
     max-width: 200px;
   }
 
@@ -564,5 +667,62 @@
 
   .reporting-home__link {
     font-size: 0.85rem;
+  }
+
+  /* A chart's header wraps rather than its title: a toggle beside the title
+   * drops under it. */
+  .reporting-widget .mdk-chart-container__header-row {
+    flex-wrap: wrap;
+  }
+
+  .reporting-widget .mdk-chart-container__header-left {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .reporting-widget .mdk-chart-container__title {
+    white-space: nowrap;
+  }
+
+  /* Narrower than two readable charts side by side (about 470px each): one
+   * column, each chart at the page's full width. */
+  @container reporting-page (max-width: 960px) {
+    .reporting-grid,
+    .reporting-costs-row,
+    .reporting-split {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .reporting-row {
+      flex-direction: column;
+    }
+
+    .reporting-row > .reporting-row__narrow {
+      flex: 1 1 auto;
+    }
+
+    .reporting-hash-grid {
+      grid-template-areas:
+        "tiles"
+        "hashrate"
+        "hashprice";
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto;
+    }
+
+    .reporting-types {
+      grid-template-areas:
+        "total"
+        "chart"
+        "legend";
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto;
+    }
+
+    /* Tiles set in rows of two or three keep at least 220px each. */
+    .reporting-tiles--2,
+    .reporting-tiles--3 {
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
   }
 }

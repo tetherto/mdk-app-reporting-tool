@@ -35,9 +35,15 @@ type Unit = {
 
 /** A client with one worker of two miners and, optionally, a pool. */
 function stubClient(
-  options: { capabilityFailures?: number; noCapabilities?: boolean; pool?: unknown } = {},
+  options: {
+    capabilityFailures?: number;
+    noCapabilities?: boolean;
+    pool?: unknown;
+    // The miner worker's `list` answer; unset, it serves no cache.
+    things?: unknown[];
+  } = {},
 ) {
-  const calls = { capabilities: 0, metrics: 0 };
+  const calls = { capabilities: 0, metrics: 0, lists: 0 };
   let failures = options.capabilityFailures ?? 0;
   const client = {
     getStatus: async () => ({
@@ -60,6 +66,12 @@ function stubClient(
         calls.metrics += 1;
         return { metrics: { hashrate_rt: 100_000, power: 3000, status: "mining" } };
       }
+      if (isRecord(channel) && channel.type === "list") {
+        calls.lists += 1;
+        if (_device === "ocean" || options.things === undefined)
+          throw new Error("ERR_TELEMETRY_TYPE_UNKNOWN: list");
+        return { things: options.things };
+      }
       return options.pool ?? {};
     },
   };
@@ -67,7 +79,12 @@ function stubClient(
 }
 
 /** A collector on an in-memory store, with every log line kept. */
-function collectorFor(client: unknown, units: Unit[], pool: { device: string } | null = null) {
+function collectorFor(
+  client: unknown,
+  units: Unit[],
+  pool: { device: string } | null = null,
+  liveFallback = true,
+) {
   const store = openStore();
   const logs: string[] = [];
   const log = (...args: unknown[]) => logs.push(args.map(String).join(" "));
@@ -83,6 +100,7 @@ function collectorFor(client: unknown, units: Unit[], pool: { device: string } |
       catalogue: parseCatalogue({ models: [] }),
       sampleIntervalSec: 60,
       historyDays: 30,
+      liveFallback,
     },
   });
   return { store, collector, logs };
@@ -98,7 +116,52 @@ const unit = (id: string, workers: string[], devices: string[] = []): Unit => ({
 
 const latest = (store: unknown) => latestSchema.parse(callOn(store, "latestMinerSamples"));
 
-describe("collector", () => {
+const snapThing = (id: string, mhs5m: number) => ({
+  id,
+  last: {
+    ts: 1,
+    snap: {
+      stats: { status: "mining", power_w: 7_000, hashrate_mhs: { t_5m: mhs5m } },
+      config: {},
+    },
+  },
+});
+
+describe("collector, worker cache", () => {
+  it("reads every miner from one cached list per worker, never pulling a device", async () => {
+    const { client, calls } = stubClient({
+      things: [snapThing("d1", 290_000_000), snapThing("d2", 300_000_000)],
+    });
+    const { store, collector } = collectorFor(client, [unit("mu-1", ["w1"])], null, false);
+
+    await callOn(collector, "sampleNow");
+    expect(calls).toMatchObject({ metrics: 0, lists: 1, capabilities: 0 });
+    expect(latest(store)[0]).toMatchObject({ total: 2, hashrate_ths: 590 });
+  });
+
+  it("counts a miner never collected as offline", async () => {
+    const { client } = stubClient({
+      things: [snapThing("d1", 290_000_000), { id: "d2", last: {} }],
+    });
+    const { store, collector } = collectorFor(client, [unit("mu-1", ["w1"])], null, false);
+
+    await callOn(collector, "sampleNow");
+    expect(latest(store)[0]).toMatchObject({ total: 2, hashrate_ths: 290 });
+  });
+
+  it("leaves a worker without a cache offline unless liveFallback is on, and says so once", async () => {
+    const { client, calls } = stubClient();
+    const { store, collector, logs } = collectorFor(client, [unit("mu-1", ["w1"])], null, false);
+
+    await callOn(collector, "sampleNow");
+    await callOn(collector, "sampleNow");
+    expect(calls.metrics).toBe(0);
+    expect(latest(store)[0]).toMatchObject({ total: 2, hashrate_ths: 0 });
+    expect(logs.filter((l) => l.includes("serves no cached readings")).length).toBe(1);
+  });
+});
+
+describe("collector, live fallback", () => {
   it("asks again for capabilities it could not get, instead of keeping the defaults", async () => {
     // Both miners ask during the first sample, and both fail.
     const { client, calls } = stubClient({ capabilityFailures: 2 });

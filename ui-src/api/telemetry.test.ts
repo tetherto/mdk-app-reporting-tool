@@ -90,3 +90,57 @@ describe("status words", () => {
     expect(normalisePowerMode(raw)).toBe(mode);
   });
 });
+
+const minerFromSnap = exportOf("plugin/lib/telemetry.js", "minerFromSnap");
+const meterFromSnap = exportOf("plugin/lib/telemetry.js", "meterFromSnap");
+
+const thing = (snap: unknown, info: Record<string, unknown> = {}) => ({
+  id: "d1",
+  info,
+  last: { ts: 1, snap },
+});
+
+describe("minerFromSnap", () => {
+  it("reads the 5-minute hashrate, power, status, mode and model of a cached snap", () => {
+    const snap = {
+      stats: {
+        status: "mining",
+        power_w: 7_200,
+        hashrate_mhs: { avg: 300_000_000, t_5m: 291_883_558.52 },
+      },
+      config: { power_mode: "eco" },
+    };
+    expect(minerFromSnap(thing(snap, { model: "M63S++" }))).toEqual({
+      hashrateThs: 291.88355852,
+      powerW: 7_200,
+      status: "online",
+      powerMode: "low",
+      model: "M63S++",
+    });
+  });
+
+  it("falls back to the average hashrate without a 5-minute one", () => {
+    const snap = { stats: { status: "error", hashrate_mhs: { avg: 1_000_000 } } };
+    expect(minerFromSnap(thing(snap))).toMatchObject({
+      hashrateThs: 1,
+      powerW: 0,
+      status: "error",
+    });
+  });
+
+  it("has no reading for a failed collection or a device never collected", () => {
+    expect(minerFromSnap(thing({ success: false, stats: { status: "offline" } }))).toBeNull();
+    expect(minerFromSnap({ id: "d1", last: {} })).toBeNull();
+    expect(minerFromSnap({ id: "d1" })).toBeNull();
+  });
+});
+
+describe("meterFromSnap", () => {
+  it("reads power_w in W, and nothing from a meter without a reading", () => {
+    expect(meterFromSnap(thing({ stats: { status: "running", power_w: 8_400_000 } }))).toBe(
+      8_400_000,
+    );
+    expect(meterFromSnap(thing({ stats: { status: "running" } }))).toBeNull();
+    expect(meterFromSnap(thing({ success: false, stats: { status: "offline" } }))).toBeNull();
+  });
+});

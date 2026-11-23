@@ -3,18 +3,29 @@
 // public miner worker per mining unit with a device per mock miner, the public
 // Ocean pool worker, the mempool.space worker and this app. `npm run
 // dev:generate` after editing the fleet; CI fails when the committed file is
-// stale. It also writes spec.rbac, from the app's permissions in mdk-app.yaml:
-// `npm run dev:generate` after changing them too.
+// stale.
 //
 // The mock devices themselves, and the SATEC meter worker (which `mdk run`
 // cannot host), are started by dev/mock-site/devices.js.
-import { readFileSync, writeFileSync } from "node:fs";
+//
+// spec.rbac is then written the way `mdk rbac init` writes it, with the CLI's own
+// functions: the CLI bound to admin, the Gateway and MCP accounts to gateway, and
+// this app's grant from its mdk-app.yaml. `mdk rbac init` itself also applies the
+// policy to a running Kernel (docs/mdk-friction.md), so the generator skips that
+// step. Dashboard users sign in as members of the `viewers` group, which reads
+// every route and no device, and of `cost-editors`, which may also save Cost
+// Input (`npm run dev:user` adds both).
+import { writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { parse as parseYaml } from "yaml";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const devDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = join(devDir, "..");
+const cliLib = (file) =>
+  import(
+    pathToFileURL(join(root, "node_modules", "@tetherto", "mdk-cli", "dist", "lib", file)).href
+  );
 const { HOST, OCEAN_ACCOUNT, fleet, minerDevices } = createRequire(import.meta.url)("./layout.js");
 
 const flow = (obj) =>
@@ -71,71 +82,39 @@ lines.push(
   "        siteConfig: ./config/site.json",
   "        catalogue: ./config/hardware-catalogue.json",
   "        sampleIntervalSec: 60",
+  "        # The vendor workers here keep no cache of snaps: pull their devices.",
+  "        liveFallback: true",
   "        # Mock site only: backfills history from the simulation. Remove on a real site.",
   "        seed: ./mock-site/seed.js",
-);
-
-// spec.rbac, as `mdk rbac init` writes it, plus the dashboard's users. The
-// Kernel denies whatever no rule allows, and `mdk validate app` refuses a stack
-// whose policy binds nobody or whose app role differs from its request.
-//   admin                   the CLI (mdk-cli), so `npm run dev:user` can add users
-//   gateway                 the Gateway and the MCP server read the policy
-//   app-reporting           the app's own Kernel access: mdk-app.yaml's permissions
-//   reporting-viewer        group viewers: every report (GET routes)
-//   reporting-cost-editor   group cost-editors: saving Cost Input (PUT /costs)
-const rule = (r) => [
-  `          - resources: ${JSON.stringify(r.resources)}`,
-  `            verbs: ${JSON.stringify(r.verbs)}`,
-  ...(r.resourceNames ? [`            resourceNames: ${JSON.stringify(r.resourceNames)}`] : []),
-];
-const role = (name, rules) => [`      - name: ${name}`, "        rules:", ...rules.flatMap(rule)];
-const binding = (roleName, kind, name) => [
-  `      - role: ${roleName}`,
-  `        subjects: [{ kind: ${kind}, name: ${name} }]`,
-];
-const appPermissions = parseAppPermissions(
-  readFileSync(join(devDir, "..", "mdk-app.yaml"), "utf8"),
-);
-lines.push(
   "  rbac:",
   "    enforcement: deny",
   "    roles:",
-  ...role("admin", [{ resources: ["*"], verbs: ["*"] }]),
-  ...role("gateway", [{ resources: ["policy"], verbs: ["read"] }]),
-  ...role("app-reporting", appPermissions),
-  ...role("reporting-viewer", [{ resources: ["reporting/*"], verbs: ["get", "list"] }]),
-  ...role("reporting-cost-editor", [
-    { resources: ["reporting/api/reporting/costs"], verbs: ["update"] },
-  ]),
-  "    bindings:",
-  ...binding("admin", "ServiceAccount", "mdk-cli"),
-  ...binding("gateway", "ServiceAccount", "mdk-gateway"),
-  ...binding("gateway", "ServiceAccount", "mdk-mcp"),
-  ...binding("app-reporting", "ServiceAccount", "app:reporting"),
-  ...binding("reporting-viewer", "Group", "viewers"),
-  ...binding("reporting-cost-editor", "Group", "cost-editors"),
+  "      - name: viewer",
+  "        rules:",
+  '          - resources: ["*"]',
+  "            verbs: [get, list]",
+  "      - name: cost-input",
+  "        rules:",
+  "          - resources: [reporting/api/reporting/costs]",
+  "            verbs: [update]",
   "",
 );
 
-/** The app's requested Kernel access, checked: rules of string lists only. */
-function parseAppPermissions(text) {
-  const { permissions } = parseYaml(text);
-  const strings = (v) => Array.isArray(v) && v.length > 0 && v.every((s) => typeof s === "string");
-  const valid =
-    Array.isArray(permissions) &&
-    permissions.every(
-      (r) =>
-        r !== null &&
-        typeof r === "object" &&
-        strings(r.resources) &&
-        strings(r.verbs) &&
-        (r.resourceNames === undefined || strings(r.resourceNames)),
-    );
-  if (!valid) throw new Error("mdk-app.yaml: permissions must be a list of { resources, verbs }");
-  return permissions;
-}
-
 writeFileSync(join(devDir, "mdk.yaml"), lines.join("\n"));
+
+const { ADMIN_ROLE, GATEWAY_ROLE, bindSubject, planAppGrant, writeAppGrant } =
+  await cliLib("rbac.js");
+const { CLI_ACCOUNT, GATEWAY_ACCOUNT, MCP_ACCOUNT } = await cliLib("credentials.js");
+const { validateApp } = await cliLib("app-package.js");
+const serviceAccount = (name) => ({ kind: "ServiceAccount", name });
+bindSubject(devDir, ADMIN_ROLE.name, serviceAccount(CLI_ACCOUNT));
+bindSubject(devDir, GATEWAY_ROLE.name, serviceAccount(GATEWAY_ACCOUNT));
+bindSubject(devDir, GATEWAY_ROLE.name, serviceAccount(MCP_ACCOUNT));
+bindSubject(devDir, "viewer", { kind: "Group", name: "viewers" });
+bindSubject(devDir, "cost-input", { kind: "Group", name: "cost-editors" });
+const { manifest, errors } = validateApp(root);
+if (errors.length) throw new Error(`mdk-app.yaml is not a valid app: ${errors[0]}`);
+writeAppGrant(devDir, planAppGrant(devDir, "reporting", manifest.permissions ?? []));
 console.log(
   `Wrote dev/mdk.yaml: ${fleet.units.length} mining units, ${fleet.units.reduce((n, u) => n + u.miners, 0)} miners`,
 );

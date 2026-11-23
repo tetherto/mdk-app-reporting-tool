@@ -3,7 +3,6 @@ import { usePeriod } from "@tetherto/mdk-react-adapter";
 import {
   Button,
   DoughnutChart,
-  EmptyState,
   ErrorCard,
   Loader,
   PeriodControl,
@@ -12,6 +11,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router";
 
 import { MINER_STATUSES } from "../../api/contract";
+import { Notice } from "../../components/notice";
 import { Page } from "../../components/page";
 import { TimeChart } from "../../components/time-chart";
 import { Widget, widgetState } from "../../components/widget";
@@ -69,19 +69,22 @@ const MinerTypes = ({ view, total }: { view: QueryView<MinerSlices>; total: stri
   if (view.status === "loading") return <Loader />;
   if (view.status === "error") return <ErrorCard title="Could not load" error={view.message} />;
   const slices = view.data;
-  if (slices.empty)
-    return <EmptyState image="simple" size="sm" description="No miners in the latest snapshot." />;
+  if (slices.empty) return <Notice message="No miners in the latest snapshot." />;
+  // No count of 0 over the notice: the notice says it.
+  if (slices.total === 0) return <Notice message="No miners in this state right now." />;
   return (
     <div className="reporting-types">
       <div className="reporting-types__total">
         <span className="reporting-field__label">{total}</span>
         <span className="reporting-types__count">{formatCount(slices.total)}</span>
       </div>
-      {slices.total > 0 ? (
-        <DoughnutChart data={slices.slices} legendPosition="left" formatValue={formatCount} />
-      ) : (
-        <EmptyState image="simple" size="sm" description="No miners in this state right now." />
-      )}
+      {/* A 1px gap, as on Revenue Summary, so a type with a few miners still shows. */}
+      <DoughnutChart
+        data={slices.slices}
+        borderWidth={1}
+        legendPosition="left"
+        formatValue={formatCount}
+      />
     </div>
   );
 };

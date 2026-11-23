@@ -43,7 +43,8 @@ export const bucketLabel = (ts: number, granularity: string, timezone: string): 
   return new Intl.DateTimeFormat("en-US", options).format(ts);
 };
 
-// Money and bitcoin, written one way on every page and toggle: USD, BTC, sats.
+// Money and bitcoin, written one way on every page: USD, BTC, sats. A toggle
+// names its options as a label, so sats is "Sats" there (BITCOIN_UNIT_LABELS).
 export const SATS_PER_BTC = 1e8;
 export const MONEY_UNITS = {
   USD: "USD",
@@ -65,6 +66,12 @@ export const MONEY_UNITS = {
 export const BITCOIN_UNIT_LIST = [BITCOIN_UNITS.BTC, BITCOIN_UNITS.SATS] as const;
 export const isBitcoinUnit = (v: string): v is BitcoinUnit =>
   BITCOIN_UNIT_LIST.some((u) => u === v);
+
+/** How a toggle names each bitcoin unit. Figures keep the unit's own spelling ("1,234 sats"). */
+export const BITCOIN_UNIT_LABELS: Record<BitcoinUnit, string> = {
+  [BITCOIN_UNITS.BTC]: "BTC",
+  [BITCOIN_UNITS.SATS]: "Sats",
+};
 
 /** A BTC amount in `unit` (BTC, or whole sats), written with its unit. */
 export const formatBitcoin = (btc: number | null | undefined, unit: BitcoinUnit): string =>

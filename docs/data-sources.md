@@ -27,7 +27,24 @@ A mining unit lists worker names, device ids, or both. `model` is the catalogue 
 
 ## Miners
 
-Pulled with `pullTelemetry(deviceId, 'metrics')` every `sampleIntervalSec`, and rolled up per mining unit and model.
+Read every `sampleIntervalSec` from each worker's cache, and rolled up per mining unit and model. A worker built on MDK's worker-infra collects a snap per device on its own timer and answers the `list` built-in from memory, so one request per worker reads all its devices and a sample never reaches a device:
+
+```js
+pullTelemetry(anyDeviceOfTheWorker, { type: "list", limit: deviceCount, status: true });
+// → { things: [{ id, info, last: { ts, snap: { success?, stats, config } } }] }
+```
+
+| Figure     | Snap field                             | Units                                            |
+| ---------- | -------------------------------------- | ------------------------------------------------ |
+| Hashrate   | `stats.hashrate_mhs.t_5m`, else `.avg` | MH/s, scaled to TH/s                             |
+| Power      | `stats.power_w`                        | W                                                |
+| Status     | `stats.status`                         | As below                                         |
+| Power mode | `config.power_mode`                    | As below                                         |
+| Model      | `info.model` (optional)                | A catalogue id or alias, else the unit's `model` |
+
+A miner whose last collection failed, or that was never collected, counts as offline.
+
+A worker that doesn't serve `list` (a plain contract worker, such as the public vendor workers under `mdk run`) leaves its devices offline, and the app logs it once. With `liveFallback: true` in the app's config, its devices are pulled instead, one by one, with `pullTelemetry(deviceId, 'metrics')`:
 
 | Figure     | Channels read (first one the contract declares) | Units                                                                                       |
 | ---------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -37,11 +54,11 @@ Pulled with `pullTelemetry(deviceId, 'metrics')` every `sampleIntervalSec`, and 
 | Power mode | `power_mode`                                    | `low` / `eco`, `normal`, `high`, `sleep`                                                    |
 | Model      | `model` (optional)                              | A catalogue id or alias, else the unit's `model`                                            |
 
-A miner that doesn't answer counts as offline. The public `antminer-mdk-worker` and `whatsminer-mdk-worker` packages satisfy this as they are, and so does any contract-first miner worker that follows MDK's standard telemetry fields.
+A miner that doesn't answer the pull counts as offline. The public `antminer-mdk-worker` and `whatsminer-mdk-worker` packages satisfy the pull as they are, and so does any contract-first miner worker that follows MDK's standard telemetry fields.
 
 ## Power meters
 
-Same pull, one reading per meter per sample: `active_power`, `power` or `power_w`, scaled to W. MDK's SATEC, ABB and Schneider workers expose `active_power` in W.
+Same reads, one reading per meter per sample: the cached snap's `stats.power_w` in W, or with `liveFallback`, a `metrics` pull's `active_power`, `power` or `power_w`, scaled to W. MDK's SATEC, ABB and Schneider workers expose `active_power` in W.
 
 ## Pool
 

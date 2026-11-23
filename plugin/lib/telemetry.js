@@ -1,7 +1,9 @@
 "use strict";
 
-// Reads vendor telemetry into the few figures the reports need. Workers name
-// and scale channels their own way; the contract's `unit` says how to scale.
+// Reads vendor telemetry into the few figures the reports need: from a
+// worker's cached snaps (minerFromSnap, meterFromSnap), or from a `metrics`
+// pull, where workers name and scale channels their own way and the
+// contract's `unit` says how to scale (minerReader, meterReader).
 
 const HASHRATE_TO_THS = {
   "H/s": 1e-12,
@@ -58,6 +60,51 @@ function meterReader(capabilities) {
   };
 }
 
+const isMapping = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const finite = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+/**
+ * A thing's last snap from a worker's cache (the worker-infra `list` built-in
+ * with `status: true`: `thing.last = { snap: { success?, stats, config }, ts }`),
+ * when it holds a reading: null for a device never collected, or whose last
+ * collection failed (`success: false`, status `offline`).
+ */
+function lastSnap(thing) {
+  const last = isMapping(thing) && isMapping(thing.last) ? thing.last : {};
+  const snap = isMapping(last.snap) ? last.snap : null;
+  if (snap === null || snap.success === false) return null;
+  const stats = isMapping(snap.stats) ? snap.stats : {};
+  if (stats.status === undefined || normaliseStatus(stats.status) === "offline") return null;
+  return { stats, config: isMapping(snap.config) ? snap.config : {} };
+}
+
+/**
+ * A miner's figures from its cached snap (mdk-core's miner snap):
+ * `hashrate_mhs.t_5m` in MH/s (the 5-minute average, else `avg`), `power_w`,
+ * `status`, `config.power_mode`. Null when the snap holds no reading.
+ */
+function minerFromSnap(thing) {
+  const snap = lastSnap(thing);
+  if (snap === null) return null;
+  const { stats, config } = snap;
+  const hashrate = isMapping(stats.hashrate_mhs) ? stats.hashrate_mhs : {};
+  const info = isMapping(thing.info) ? thing.info : {};
+  return {
+    // MH/s to TH/s.
+    hashrateThs: (finite(hashrate.t_5m) ?? finite(hashrate.avg) ?? 0) / 1e6,
+    powerW: num(stats.power_w),
+    status: normaliseStatus(stats.status),
+    powerMode: normalisePowerMode(config.power_mode),
+    model: typeof info.model === "string" ? info.model : null,
+  };
+}
+
+/** A meter's power in W from its cached snap (`power_w`), or null without a reading. */
+function meterFromSnap(thing) {
+  const snap = lastSnap(thing);
+  return snap === null ? null : finite(snap.stats.power_w);
+}
+
 function num(v) {
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
@@ -83,4 +130,11 @@ function normalisePowerMode(raw) {
   return null;
 }
 
-module.exports = { minerReader, meterReader, normaliseStatus, normalisePowerMode };
+module.exports = {
+  minerReader,
+  meterReader,
+  minerFromSnap,
+  meterFromSnap,
+  normaliseStatus,
+  normalisePowerMode,
+};

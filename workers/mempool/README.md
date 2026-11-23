@@ -17,7 +17,7 @@ Declared in [mdk-contract.json](mdk-contract.json), one handler per channel in [
 | `fee_share`        | `[{ ts, feeShare }]`, daily, from 0 to 1      | up to two years                        |
 | `fee_rate`         | `[{ ts, feeRateSatsVb }]`, daily, in sats/vB  | up to two years                        |
 
-Errors: `ERR_MEMPOOL_UNREACHABLE` when the API doesn't answer, `ERR_MEMPOOL_BAD_RESPONSE` when it answers with an unexpected body. Responses are cached, and the last good answer is served while the API is briefly unreachable.
+Errors: `ERR_MEMPOOL_BASE_URL_MISSING` at startup when the device has no `baseUrl`, `ERR_MEMPOOL_UNREACHABLE` when the API doesn't answer, `ERR_MEMPOOL_BAD_RESPONSE` when it answers with an unexpected body. Responses are cached, and the last good answer is served while the API is briefly unreachable.
 
 ## Run it
 
@@ -33,10 +33,10 @@ spec:
           - { id: mempool, opts: { baseUrl: "https://mempool.space" } }
 ```
 
-| Option      | Default                 | Meaning                                            |
-| ----------- | ----------------------- | -------------------------------------------------- |
-| `baseUrl`   | `https://mempool.space` | The API to read; point it at a self-hosted mempool |
-| `timeoutMs` | `15000`                 | Per-request timeout                                |
+| Option      | Default         | Meaning                                                                                |
+| ----------- | --------------- | -------------------------------------------------------------------------------------- |
+| `baseUrl`   | none (required) | A mempool instance's origin, without `/api` (for example `https://mempool.space`)      |
+| `timeoutMs` | `60000`         | Per-request timeout; the two-year mining endpoints can take about 25 s on a cold cache |
 
 The worker needs internet access, or a reachable `baseUrl`. Node 24 or later.
 

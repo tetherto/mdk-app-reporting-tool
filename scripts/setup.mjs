@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Installs this repo's packages and what the dev stack needs, and builds ui/
 // and the local dashboard. MDK comes from npm (@tetherto/mdk-*, the version
-// package.json pins: the CLI, the client, the Kernel, the Gateway, the UI
-// packages and the dashboard shell `mdk create dashboard` scaffolds), except:
+// package.json pins: the CLI, the Kernel, the Gateway and the UI packages),
+// except:
 //
 //   dev/.mdk-satec/   MDK's SATEC meter worker, which isn't on npm: its files
 //                     (and the MDK core files it requires by relative path) from
@@ -10,15 +10,16 @@
 //                     installed CLI.
 //
 // It installs:
-//   node_modules/     the mdk CLI and @tetherto/mdk-client
+//   node_modules/     the mdk CLI
 //   dev/              the mock site's public workers and this app (file:..),
 //                     so `mdk run --dir dev` resolves them by package name
 //   ui-src/           the MDK UI packages and tooling
-// and builds ui/ and the local dashboard (dev/apps/dashboard).
+// and builds ui/ and the local dashboard (dev/apps/dashboard, from
+// `mdk create dashboard`).
 //
-// It records the CLI version it set up (in node_modules/.mdk-setup) once a run
-// has finished. When it has moved, or no run has recorded it, it fetches the
-// SATEC worker and creates the dashboard again, instead of trusting what an
+// It records the CLI version it set up (node_modules/.mdk-setup) once a run has
+// finished. When the version has moved, or no run has recorded one, it fetches
+// the SATEC worker and creates the dashboard again, instead of trusting what an
 // older MDK left behind. A run that fails records nothing, so the next one
 // retries.
 //
@@ -47,9 +48,10 @@ const readText = (file) => {
 
 // --- npm ---------------------------------------------------------------------
 
-step("Installing the mdk CLI and the dev stack");
+step("Installing the mdk CLI, the dev stack and the app UI (ui-src)");
 await npmRun([ci ? "ci" : "install", ...quiet]);
 await npmRun(["--prefix", "dev", ci ? "ci" : "install", ...quiet]);
+await npmRun(["--prefix", "ui-src", ci ? "ci" : "install", ...quiet]);
 
 // What this run sets up, against what the last finished run recorded.
 const mdkVersion = JSON.parse(
@@ -57,9 +59,6 @@ const mdkVersion = JSON.parse(
 ).version;
 const SETUP_MARKER = join(ROOT, "node_modules", ".mdk-setup");
 const moved = readText(SETUP_MARKER) !== mdkVersion;
-
-step("Installing the app UI (ui-src)");
-await npmRun(["--prefix", "ui-src", ci ? "ci" : "install", ...quiet]);
 
 // --- the SATEC worker, from the release tag ----------------------------------
 
@@ -117,17 +116,21 @@ if (ci) {
 }
 await npmRun(["run", "build:ui"]);
 
-// --- the local dashboard ------------------------------------------------------
+// --- the local dashboard -----------------------------------------------------
 
-// `mdk create dashboard` scaffolds the shell of the CLI's release and points
-// its .env at this stack's Gateway.
+// Created from the shell of the CLI's release: a new CLI may have changed it,
+// so it is created again when the version moves.
 const DASHBOARD = join(DEV, "apps", "dashboard");
 const dashboardInstalled = () => existsSync(join(DASHBOARD, "node_modules", ".bin", "vite"));
 if (moved || !dashboardInstalled()) {
   step("Creating the local MDK dashboard (dev/apps/dashboard)");
-  await run(mdkBin(), ["create", "dashboard", "--dir", DEV, "--force", "--no-install"]);
-  // With peer dependencies: the devkit's form components need react-hook-form.
-  await npmRun(["install", ...quiet], { cwd: DASHBOARD });
+  await run(mdkBin(), ["create", "dashboard", "--dir", DEV, "--force"]);
+}
+// The template's install can crash npm 11 while it resolves peer dependencies
+// (docs/mdk-friction.md), and `mdk create` carries on regardless.
+if (!dashboardInstalled()) {
+  step("Installing the dashboard with --legacy-peer-deps");
+  await npmRun(["install", "--legacy-peer-deps", ...quiet], { cwd: DASHBOARD });
 }
 // Recorded last: a run that failed on the way leaves the old record, and the
 // next run fetches and creates again.

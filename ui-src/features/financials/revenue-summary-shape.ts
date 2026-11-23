@@ -9,20 +9,22 @@ import type { MissingSource } from "../../components/widget";
 import type { ChartView } from "../../lib/chart-view";
 import { COLORS } from "../../lib/colors";
 import {
+  BITCOIN_UNIT_LABELS,
   formatBitcoin,
   formatScaled,
   formatUsd,
   formatWith,
+  isBitcoinUnit,
   MONEY_UNITS,
   SATS_PER_BTC,
 } from "../../lib/format";
 import type { Tile } from "./financials-shape";
 import { financialChart, missingOf, per } from "./financials-shape";
 
-/** The Mining Revenue chart's unit toggle. */
+/** The Mining Revenue chart's unit toggle: the page's bitcoin units, then USD. */
 export const REVENUE_CHART_UNITS = [
-  { value: "BTC", label: "BTC" },
-  { value: "sats", label: "sats" },
+  { value: "BTC", label: BITCOIN_UNIT_LABELS.BTC },
+  { value: "sats", label: BITCOIN_UNIT_LABELS.sats },
   { value: "receipt", label: "USD at Receipt" },
   { value: "report", label: "USD at Report" },
 ] as const;
@@ -30,6 +32,12 @@ export type RevenueChartUnit = (typeof REVENUE_CHART_UNITS)[number]["value"];
 
 export const isRevenueChartUnit = (v: string): v is RevenueChartUnit =>
   REVENUE_CHART_UNITS.some((u) => u.value === v);
+
+/** The chart's USD options, which the page's Bitcoin Unit doesn't have. */
+export type UsdChartUnit = Exclude<RevenueChartUnit, BitcoinUnit>;
+
+export const isUsdChartUnit = (v: string): v is UsdChartUnit =>
+  isRevenueChartUnit(v) && !isBitcoinUnit(v);
 
 /** The subsidy / fee split in BTC, and the unit the page writes it in. */
 export type SplitSlices = {

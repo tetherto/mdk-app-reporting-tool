@@ -3,11 +3,16 @@
 // Samples the site through the Kernel and writes the history the reports read:
 //   - miners: every sampleIntervalSec, rolled up per mining unit and model
 //   - meters: on the same tick, one power reading per meter
+//   Both come from each worker's cache: one `list` request (with `status`)
+//   per worker, answered from the snaps the worker collects on its own timer,
+//   so a sample never reaches a device. A worker without that cache leaves
+//   its devices offline, unless `liveFallback` is set: then they are pulled
+//   one by one (`metrics`), as a stack of plain contract workers needs.
 //   - pool payouts and market data: every SYNC_INTERVAL_MS, backfilled as far
 //     back as the worker answers (historyDays at most)
 // Read-only against MDK: it only pulls telemetry, never sends a command.
 
-const { minerReader, meterReader } = require("./telemetry");
+const { minerReader, meterReader, minerFromSnap, meterFromSnap } = require("./telemetry");
 const { DAY } = require("./time");
 
 const SYNC_INTERVAL_MS = 10 * 60 * 1000;
@@ -55,14 +60,17 @@ function createCollector({ client, store, config, logger }) {
     kernelConnected: false,
     lastSampleAt: null,
     lastError: null,
-    // deviceId -> workerId, from the last discovery
+    // deviceId -> workerId, and workerId -> deviceIds, from the last discovery
     devices: new Map(),
+    workers: new Map(),
     lastSyncAt: 0,
     sources: { pool: false, market: false },
   };
   const readers = new Map();
   // Devices two mining units both claim, warned about once.
   const warnedTwice = new Set();
+  // Workers already reported as serving no cache, so the warning is logged once.
+  const uncached = new Set();
   let timer = null;
   let syncing = null;
   let sampling = null;
@@ -94,9 +102,12 @@ function createCollector({ client, store, config, logger }) {
     // are not wired (MDK's mvp-site skips them the same way).
     const { workers } = await client.getStatus();
     state.devices = new Map();
+    state.workers = new Map();
     for (const w of workers) {
       if (w.state === "TERMINATED" || w.healthState === "DEAD") continue;
-      for (const id of w.deviceIds) state.devices.set(id, w.workerId);
+      const deviceIds = Array.isArray(w.deviceIds) ? w.deviceIds : [];
+      state.workers.set(w.workerId, deviceIds);
+      for (const id of deviceIds) state.devices.set(id, w.workerId);
     }
     state.kernelConnected = true;
   }
@@ -142,15 +153,72 @@ function createCollector({ client, store, config, logger }) {
     }
   }
 
-  async function sampleMiners(ts) {
+  /**
+   * One worker's cached things by device id, or null when it does not serve
+   * the worker-infra `list` built-in (a plain contract worker) or the
+   * request fails.
+   */
+  async function readCache(workerId) {
+    const deviceIds = state.workers.get(workerId) || [];
+    let reply;
+    try {
+      reply = await client.pullTelemetry(
+        deviceIds[0] ?? workerId,
+        { type: "list", limit: Math.max(deviceIds.length, 1), status: true },
+        { timeout: 30000 },
+      );
+    } catch {
+      return null;
+    }
+    if (!reply || !Array.isArray(reply.things)) return null;
+    const things = new Map();
+    for (const thing of reply.things) {
+      if (thing && typeof thing.id === "string") things.set(thing.id, thing);
+    }
+    return things;
+  }
+
+  /**
+   * Reads devices for one sample: each worker's cache is listed once and
+   * shared by its miners and meters. `read(kind, id)` answers a miner's
+   * figures, a meter's power in W, or null (offline).
+   */
+  function sampleReader() {
+    const caches = new Map();
+    const cacheOf = (workerId) => {
+      if (!caches.has(workerId)) caches.set(workerId, readCache(workerId));
+      return caches.get(workerId);
+    };
+    return async (kind, id) => {
+      const workerId = state.devices.get(id);
+      const things = await cacheOf(workerId);
+      if (things !== null) {
+        uncached.delete(workerId);
+        const thing = things.get(id);
+        if (thing === undefined) return null;
+        return kind === "miner" ? minerFromSnap(thing) : meterFromSnap(thing);
+      }
+      if (!uncached.has(workerId)) {
+        uncached.add(workerId);
+        logger.warn(
+          config.liveFallback
+            ? "worker %s serves no cached readings: pulling its devices"
+            : "worker %s serves no cached readings: its devices read offline (set liveFallback to pull them)",
+          workerId,
+        );
+      }
+      if (!config.liveFallback) return null;
+      const metrics = await pullMetrics(id);
+      return metrics ? (await reader(kind, id))(metrics) : null;
+    };
+  }
+
+  async function sampleMiners(ts, read) {
     const rows = [];
     for (const { unit, ids } of unitDevices()) {
       const rollups = new Map();
       // oxlint-disable-next-line no-await-in-loop -- one unit at a time keeps at most PULL_CONCURRENCY pulls in flight
-      const results = await mapLimit(ids, PULL_CONCURRENCY, async (id) => {
-        const metrics = await pullMetrics(id);
-        return metrics ? (await reader("miner", id))(metrics) : null;
-      });
+      const results = await mapLimit(ids, PULL_CONCURRENCY, (id) => read("miner", id));
       for (const m of results) {
         // A miner that does not answer is offline; its model falls back to the unit's.
         const modelKey = (m && m.model) || unit.model || "unknown";
@@ -181,13 +249,11 @@ function createCollector({ client, store, config, logger }) {
     return rows;
   }
 
-  async function sampleMeters(ts) {
+  async function sampleMeters(ts, read) {
     const wired = config.meters.filter((m) => state.devices.has(m.device));
     const rows = [];
     await mapLimit(wired, PULL_CONCURRENCY, async (meter) => {
-      const metrics = await pullMetrics(meter.device);
-      if (!metrics) return;
-      const powerW = (await reader("meter", meter.device))(metrics);
+      const powerW = await read("meter", meter.device);
       if (powerW !== null)
         rows.push({ ts, meter: meter.device, intervalS: config.sampleIntervalSec, powerW });
     });
@@ -336,8 +402,9 @@ function createCollector({ client, store, config, logger }) {
       const ts = Math.floor(Date.now() / intervalMs) * intervalMs;
       try {
         await discover();
-        await sampleMiners(ts);
-        await sampleMeters(ts);
+        const read = sampleReader();
+        await sampleMiners(ts, read);
+        await sampleMeters(ts, read);
         state.lastSampleAt = Date.now();
         state.lastError = null;
       } catch (err) {

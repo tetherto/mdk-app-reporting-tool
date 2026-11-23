@@ -1,7 +1,6 @@
 import type { DataTableColumnDef } from "@tetherto/mdk-react-devkit";
 import {
   DataTable,
-  EmptyState,
   ErrorCard,
   Loader,
   POWER_W_SCALES,
@@ -10,6 +9,7 @@ import {
 import type { CSSProperties } from "react";
 
 import type { ModelSnapshot, SnapshotCount } from "../../api/contract";
+import { Notice } from "../../components/notice";
 import { COLORS } from "../../lib/colors";
 import { formatNumber, formatScaled } from "../../lib/format";
 import { SnapshotBar } from "./snapshot-bar";
@@ -73,7 +73,7 @@ export const PowerModeTable = ({ timezone }: { timezone: string }) => {
       {view.status === "loading" ? <Loader /> : null}
       {view.status === "error" ? <ErrorCard title="Could not load" error={view.message} /> : null}
       {view.status === "ready" && view.data.models.length === 0 ? (
-        <EmptyState size="sm" description="No miners in the latest snapshot." />
+        <Notice message="No miners in the latest snapshot." />
       ) : null}
       {view.status === "ready" && view.data.models.length > 0 ? (
         <DataTable<ModelSnapshot>
